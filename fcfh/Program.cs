@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -6,36 +7,28 @@ namespace fcfh
 {
     class Program
     {
+        [Flags]
+        private enum OperationMode : int
+        {
+            Encode = 1,
+            Decode = Encode << 1,
+            UsePixel = Decode << 1,
+            UseHeader = UsePixel << 1,
+            Crypt = UseHeader << 1
+        }
+
+        private struct CMD
+        {
+            public OperationMode Mode;
+            public string Input;
+            public string Output;
+            public string Password;
+        }
+
         static void Main(string[] args)
         {
-#if DEBUG
-            ShowHelp();
-            /*
-            //OGG --> IMG
-            var Data = File.ReadAllBytes(@"C:\Users\Administrator\Desktop\Leaving The City.mp3");
-            using (var MS = new MemoryStream(Data, false))
-            {
-                File.WriteAllBytes(@"C:\Users\Administrator\Desktop\x.png", ImageWriter.PixelMode.CreateImageFromFile(MS, "x.ogg", true, true));
-            }
-            //IMG --> OGG
-            Data = File.ReadAllBytes(@"C:\Users\Administrator\Desktop\x.png");
-            using (var MS = new MemoryStream(Data, false))
-            {
-                File.WriteAllBytes(@"C:\Users\Administrator\Desktop\y.mp3", ImageWriter.PixelMode.CreateFileFromImage(MS));
-            }
-            //*/
             Console.Error.WriteLine("#END");
             Console.ReadKey(true);
-#else
-            if (args.Length==0 || args.Contains("/?"))
-            {
-                ShowHelp();
-            }
-            else
-            {
-            }
-#endif
-
         }
 
         private static void ShowHelp()
