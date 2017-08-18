@@ -36,7 +36,7 @@ namespace fcfh
                 "/e",
                 //"/p",
                 "/header",
-                @"C:\Users\Administrator\Desktop\Images\Boarding-Pass.png",
+                @"C:\Users\Administrator\Desktop\mp3.png",
                 @"D:\Programme\VIDEO\ffmpeg\MP3\Bad Apple!!.mp3"
             };
 #endif
