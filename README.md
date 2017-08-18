@@ -61,12 +61,23 @@ Headers usually don't get converted to the new format if changing image formats
 but they sometimes don't get erased when uploading the image to a 3rd party,
 this makes them harder to detect, unless you store an image that looks way too small for its resolution.
 
+# Usage Example
+
+I made a simple [JavaScript example](https://cable.ayra.ch/imgplay/).
+This Example implementation will only decode the first embedded data block found in PNG headers.
+It does not supports pixel mode and will not check if the data is actually a supported audio format.
+
 # TODO
 
-- [X] Implement Pixel mode
-- [ ] Implement Header mode
-- [ ] Implement Encryption component
-- [ ] Implement Command line switches
-- [ ] Publish standard
+Not necessarily in order
 
-
+- [X] Implement Pixel mode Encode
+- [X] Implement Pixel mode Decode
+- [X] Implement Header mode Encode
+- [ ] Implement Header mode Decode
+- [ ] File name functions for Decode
+- [X] Implement Encryption component
+- [ ] Implement Decryption component
+- [X] Implement Command line switches
+- [ ] GUI
+- [ ] Publish (some sort of) standard
