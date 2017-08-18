@@ -88,6 +88,17 @@ namespace fcfh
                         return hton(CalcChecksum(Data));
                     }
                 }
+                /// <summary>
+                /// Gets if this Header has encoded data
+                /// </summary>
+                public bool IsDataHeader
+                {
+                    get
+                    {
+                        //Data must be at least 14 bytes (BMPENC+int+int)
+                        return Data.Length > 14 && Encoding.ASCII.GetString(Data, 0, 6) == MAGIC;
+                    }
+                }
 
                 /// <summary>
                 /// Reads A Header from the given Source
@@ -154,7 +165,7 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                     using (var BW = new BinaryWriter(Output, Encoding.UTF8, true))
                     {
                         BW.Write(hton(Data.Length));
-                        BW.Write(HeaderName);
+                        BW.Write(Encoding.Default.GetBytes(HeaderName));
                         BW.Write(Data);
                         BW.Write(hton(CalcChecksum()));
                     }
@@ -306,6 +317,89 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
             public const string DEFAULT_HEADER = "fcFh";
 
             /// <summary>
+            /// Reads a stream as PNG
+            /// </summary>
+            /// <remarks>Stream must start with a PNG header at the current position</remarks>
+            /// <param name="S">Stream</param>
+            /// <returns>Header list</returns>
+            public static Header[] ReadPNG(Stream S)
+            {
+                var Headers = new List<Header>();
+
+                byte[] HeaderData = new byte[8];
+                S.Read(HeaderData, 0, 8);
+                if (BitConverter.ToUInt64(HeaderData, 0) == Header.PNG)
+                {
+                    do
+                    {
+                        Headers.Add(new Header(S));
+                    } while (Headers.Last().HeaderName != "IEND");
+                }
+                return Headers.ToArray();
+            }
+
+            /// <summary>
+            /// Reads a file as PNG
+            /// </summary>
+            /// <param name="FileName">File name</param>
+            /// <returns>Header list</returns>
+            public static Header[] ReadPNG(string FileName)
+            {
+                using (var FS = File.OpenRead(FileName))
+                {
+                    return ReadPNG(FS);
+                }
+            }
+
+            /// <summary>
+            /// Writes a collection of PNG Headers to a byte array
+            /// </summary>
+            /// <remarks>This will check for IHDR and IEND positions</remarks>
+            /// <param name="Headers">PNG Headers</param>
+            /// <returns>PNG bytes</returns>
+            public static byte[] WritePNG(IEnumerable<Header> Headers)
+            {
+                var Arr = Headers.ToArray();
+                if (Arr.Length > 1 && Arr.First().HeaderName == "IHDR" && Arr.Last().HeaderName == "IEND")
+                {
+                    using (var MS = new MemoryStream())
+                    {
+                        MS.Write(BitConverter.GetBytes(Header.PNG), 0, 8);
+                        foreach (var H in Headers)
+                        {
+                            H.WriteHeader(MS);
+                        }
+                        return MS.ToArray();
+                    }
+                }
+                return null;
+            }
+
+            /// <summary>
+            /// Checks if the given File is a PNG
+            /// </summary>
+            /// <remarks>Only checks the 8 byte header</remarks>
+            /// <param name="FileName">File name</param>
+            /// <returns>True if PNG, false otherwise or on I/O error</returns>
+            public static bool IsPNG(string FileName)
+            {
+                try
+                {
+                    using (var FS = File.OpenRead(FileName))
+                    {
+                        using (var BR = new BinaryReader(FS))
+                        {
+                            return BR.ReadUInt64() == Header.PNG;
+                        }
+                    }
+                }
+                catch
+                {
+                }
+                return false;
+            }
+
+            /// <summary>
             /// Stores data in a PNG header
             /// </summary>
             /// <param name="FullFileName">Source file</param>
@@ -319,7 +413,7 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                 {
                     using (var IMG = File.OpenRead(ImageFile))
                     {
-                        return CreateImageFromFile(FS, (new FileInfo(FullFileName)).Name, IMG, HeaderName);
+                        return CreateImageFromFile(FS, Tools.NameOnly(FullFileName), IMG, HeaderName);
                     }
                 }
             }
@@ -335,7 +429,63 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
             /// <remarks>This process is repeatable</remarks>
             public static byte[] CreateImageFromFile(Stream InputFile, string FileName, Stream InputImage, string HeaderName = DEFAULT_HEADER)
             {
+                var Headers = ReadPNG(InputImage).ToList();
+                if (Headers.Count > 0)
+                {
+                    var Data = Tools.ReadAll(InputFile);
+                    Headers.Insert(1, new Header(HeaderName,
+                        Encoding.Default.GetBytes(MAGIC)
+                        .Concat(BitConverter.GetBytes(Encoding.Default.GetByteCount(FileName)))
+                        .Concat(Encoding.Default.GetBytes(FileName))
+                        .Concat(BitConverter.GetBytes(Data.Length))
+                        .Concat(Data)
+                        .ToArray()));
+                    return WritePNG(Headers);
+                }
+                return null;
+            }
 
+            public static string GetFileName(Stream Input)
+            {
+                var Headers = ReadPNG(Input);
+                if (Headers != null && Headers.Length > 0)
+                {
+                    foreach (var H in Headers)
+                    {
+                        if (H.IsDataHeader)
+                        {
+                            return Encoding.UTF8.GetString(H.Data, 10, BitConverter.ToInt32(H.Data, 6));
+                        }
+                    }
+                }
+                return null;
+            }
+
+            /// <summary>
+            /// Extracts the first file found in a PNG Header
+            /// </summary>
+            /// <param name="Input">PNG Stream</param>
+            /// <returns>Extracted content, or null if none found</returns>
+            public static byte[] CreateFileFromImage(Stream Input)
+            {
+                var Headers = ReadPNG(Input);
+                if (Headers != null && Headers.Length > 0)
+                {
+                    foreach (var H in Headers)
+                    {
+                        if (H.IsDataHeader)
+                        {
+                            var Offset = BitConverter.ToInt32(H.Data, 6) + 6 + 4;
+                            var DataLen = BitConverter.ToInt32(H.Data, Offset);
+                            using (var MS = new MemoryStream())
+                            {
+                                MS.Write(H.Data, Offset + 4, DataLen);
+                                return MS.ToArray();
+                            }
+
+                        }
+                    }
+                }
                 return null;
             }
         }
@@ -358,7 +508,7 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
             {
                 using (var FS = File.OpenRead(FullFileName))
                 {
-                    return CreateImageFromFile(FS, (new FileInfo(FullFileName)).Name, PNG, AllowDirectDecode);
+                    return CreateImageFromFile(FS, Tools.NameOnly(FullFileName), PNG, AllowDirectDecode);
                 }
             }
 

@@ -44,5 +44,21 @@ namespace fcfh
                 return MS.ToArray();
             }
         }
+
+        /// <summary>
+        /// Returns the last component of a Path string
+        /// </summary>
+        /// <remarks>File/Directory does not needs to exist</remarks>
+        /// <param name="input">File or directory path</param>
+        /// <returns>Name component</returns>
+        public static string NameOnly(string input)
+        {
+            return input
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                .Split(Path.DirectorySeparatorChar)
+                .Last()
+                .Split(Path.AltDirectorySeparatorChar)
+                .Last();
+        }
     }
 }
