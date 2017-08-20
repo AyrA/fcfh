@@ -7,25 +7,71 @@ namespace fcfh
 {
     class Program
     {
+        /// <summary>
+        /// Mode of operation of the tool
+        /// </summary>
         [Flags]
         private enum OperationMode : int
         {
+            /// <summary>
+            /// Do nothing.
+            /// This is unobtainable
+            /// </summary>
             None = 0,
+            /// <summary>
+            /// Encode content into an Image
+            /// </summary>
             Encode = 1,
+            /// <summary>
+            /// Decode Content from an Image
+            /// </summary>
             Decode = Encode << 1,
+            /// <summary>
+            /// Use Pixel Mode
+            /// </summary>
             UsePixel = Decode << 1,
+            /// <summary>
+            /// Use Header Mode
+            /// </summary>
             UseHeader = UsePixel << 1,
+            /// <summary>
+            /// Order Pixel in binary readable form
+            /// </summary>
             Readable = UseHeader << 1,
+            /// <summary>
+            /// Encrypt/Decrypt content
+            /// </summary>
             Crypt = Readable << 1
         }
 
+        /// <summary>
+        /// Command line argument structure
+        /// </summary>
         private struct CMD
         {
+            /// <summary>
+            /// Operation mode
+            /// </summary>
             public OperationMode Mode;
+            /// <summary>
+            /// Source File
+            /// </summary>
             public string Input;
+            /// <summary>
+            /// Destination File
+            /// </summary>
             public string Output;
+            /// <summary>
+            /// Header File (Header Mode only)
+            /// </summary>
             public string HeaderFile;
+            /// <summary>
+            /// Password (if passed as argument)
+            /// </summary>
             public string Password;
+            /// <summary>
+            /// Overall command line argument validation
+            /// </summary>
             public bool Valid;
         }
 
@@ -101,6 +147,10 @@ namespace fcfh
             Console.ReadKey(true);
         }
 
+        /// <summary>
+        /// Ask a user for a password without showing the input he types
+        /// </summary>
+        /// <returns>Password</returns>
         private static string AskPass()
         {
             const char BLANK = '░';
@@ -162,6 +212,11 @@ namespace fcfh
             }
         }
 
+        /// <summary>
+        /// Processes command line arguments
+        /// </summary>
+        /// <param name="Args">Arguments</param>
+        /// <returns>Argument structure</returns>
         private static CMD ParseArgs(string[] Args)
         {
             int i = 0;
@@ -315,6 +370,9 @@ namespace fcfh
             return C;
         }
 
+        /// <summary>
+        /// Shows Help
+        /// </summary>
         private static void ShowHelp()
         {
             Console.Error.WriteLine(@"{0} /{{e|d}} <infile> [outfile] [/readable] [/header source] [/p|/pass password]
