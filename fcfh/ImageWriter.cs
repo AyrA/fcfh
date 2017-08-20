@@ -5,7 +5,6 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace fcfh
@@ -14,10 +13,34 @@ namespace fcfh
     {
         public const string MAGIC = "BMPENC";
 
+        /// <summary>
+        /// BMPENC file
+        /// </summary>
+        public struct ImageFile
+        {
+            /// <summary>
+            /// File Name
+            /// </summary>
+            public string FileName;
+            /// <summary>
+            /// File Data
+            /// </summary>
+            public byte[] Data;
+        }
+
+        /// <summary>
+        /// Provides encoding and decoding from Image Headers
+        /// </summary>
         public static class HeaderMode
         {
+            /// <summary>
+            /// Represents a PNG Header
+            /// </summary>
             public class Header
             {
+                /// <summary>
+                /// Chunk Flags
+                /// </summary>
                 [Flags]
                 public enum ChunkFlags : int
                 {
@@ -97,6 +120,39 @@ namespace fcfh
                     {
                         //Data must be at least 14 bytes (BMPENC+int+int)
                         return Data.Length > 14 && Encoding.ASCII.GetString(Data, 0, 6) == MAGIC;
+                    }
+                }
+                /// <summary>
+                /// Gets the File Name from a Header
+                /// </summary>
+                public string FileName
+                {
+                    get
+                    {
+                        if (IsDataHeader)
+                        {
+                            return Encoding.UTF8.GetString(Data, 10, BitConverter.ToInt32(Data, 6));
+                        }
+                        return null;
+                    }
+                }
+                /// <summary>
+                /// Gets the File Data from a Data Header
+                /// </summary>
+                public byte[] FileData
+                {
+                    get
+                    {
+                        if (IsDataHeader)
+                        {
+                            var StartOfData = 6 + 4 + 4 + BitConverter.ToInt32(Data, 6);
+                            var LengthOfData = BitConverter.ToInt32(Data, StartOfData - 4);
+                            return Data
+                                .Skip(6 + 4 + 4 + BitConverter.ToInt32(Data, 6))
+                                .Take(LengthOfData)
+                                .ToArray();
+                        }
+                        return null;
                     }
                 }
 
@@ -444,52 +500,11 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                 }
                 return null;
             }
-
-            public static string GetFileName(Stream Input)
-            {
-                var Headers = ReadPNG(Input);
-                if (Headers != null && Headers.Length > 0)
-                {
-                    foreach (var H in Headers)
-                    {
-                        if (H.IsDataHeader)
-                        {
-                            return Encoding.UTF8.GetString(H.Data, 10, BitConverter.ToInt32(H.Data, 6));
-                        }
-                    }
-                }
-                return null;
-            }
-
-            /// <summary>
-            /// Extracts the first file found in a PNG Header
-            /// </summary>
-            /// <param name="Input">PNG Stream</param>
-            /// <returns>Extracted content, or null if none found</returns>
-            public static byte[] CreateFileFromImage(Stream Input)
-            {
-                var Headers = ReadPNG(Input);
-                if (Headers != null && Headers.Length > 0)
-                {
-                    foreach (var H in Headers)
-                    {
-                        if (H.IsDataHeader)
-                        {
-                            var Offset = BitConverter.ToInt32(H.Data, 6) + 6 + 4;
-                            var DataLen = BitConverter.ToInt32(H.Data, Offset);
-                            using (var MS = new MemoryStream())
-                            {
-                                MS.Write(H.Data, Offset + 4, DataLen);
-                                return MS.ToArray();
-                            }
-
-                        }
-                    }
-                }
-                return null;
-            }
         }
 
+        /// <summary>
+        /// Provides encoding and decoding from Pixel Data
+        /// </summary>
         public static class PixelMode
         {
             /// <summary>
