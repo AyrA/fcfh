@@ -76,7 +76,7 @@ Not necessarily in order
 - [X] Implement Header mode Encode
 - [X] Implement Header mode Decode
 - [X] Make integers consistant (network byte order)
-- [ ] File name functions for Decode
+- [X] File name functions for Decode
 - [X] Implement Encryption component
 - [ ] Implement Decryption component
 - [X] Implement Command line switches
