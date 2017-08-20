@@ -66,6 +66,66 @@ this makes them harder to detect, unless you store an image that looks way too s
 I made a simple [JavaScript example](https://cable.ayra.ch/imgplay/).
 This Example implementation will only decode the first embedded data block found in PNG headers.
 It does not supports pixel mode and will not check if the data is actually a supported audio format.
+There are no plans for expanding the JS implementation.
+
+# Standard
+
+This chapter describes how the Data is Encoded.
+
+All Integers are stored in network byte order.
+According to [RFC 1700](https://tools.ietf.org/html/rfc1700) this is Big endian.
+
+| Field      | Type  | Length (bytes) | Description         |
+| ---------- | ----- | -------------- | ------------------- |
+| ID         | Bytes | 6              | Always "BMPENC"     |
+| NameLength | Int32 | 4              | Length of File Name |
+| Name       | UTF-8 | NameLength     | File name           |
+| DataLength | Int32 | 4              | Length of Data      |
+| Data       | Bytes | DataLength     | Payload             |
+
+## Detailed Field description
+
+### ID
+
+The ID field MUST be made up of the byte sequence `42 4D 50 45 4E 43`, which translates to ASCII `BMPENC`.
+It is case sensitive.
+
+### NameLength
+
+This is the Length of the File Name. The Length MUST be Specified in Bytes and not in UTF-8 Chars.
+
+### Name
+
+This is the File Name. The File Name MUST NOT contain a Byte Order Mark.
+The File Name MUST NOT be null Terminated.
+An Encoder MUST NOT store the full or relative Path Name, only the File Name.
+A Decoder MUST NOT interpret the Path Name.
+
+### DataLength
+
+This is the Length of the Payload in Bytes.
+This Field is always required, even if there is no extra data after the payload.
+The DataLength MUST NOT span over multiple Headers
+
+### Data
+
+This is the Data that has been encoded in the image.
+The Encoder and Decoder MUST NOT transform the data in any way and always treat it as an 8-bit binary sequence.
+
+# Multiple Files
+
+Each Image can store one Pixel Mode File.
+Some Images allow for multiple custom Headers.
+In this case, each Header can contain a single File.
+
+The format does not supports path names.
+If an Encoder wants to store entire Directory Structures I recommend to store the Structure in an existing File container Format (zip, tar, 7z, etc) and then store the single container File in the Image.
+
+# Encryption
+
+Encryption is not part of the standard because there are enough encryption tools already. FCFH implements [ACRYPT](https://github.com/AyrA/crypt) as an example.
+This is in no way an indication that an Encoder or Decoder should implement the same algorithm.
+There are enough tools that properly encrypt and decrypt files
 
 # TODO
 
@@ -81,4 +141,4 @@ Not necessarily in order
 - [X] Implement Decryption component
 - [X] Implement Command line switches
 - [ ] GUI
-- [ ] Publish (some sort of) standard
+- [X] Publish (some sort of) standard
