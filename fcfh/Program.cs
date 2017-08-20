@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -7,6 +6,7 @@ namespace fcfh
 {
     class Program
     {
+        #region Structures
         /// <summary>
         /// Mode of operation of the tool
         /// </summary>
@@ -74,6 +74,7 @@ namespace fcfh
             /// </summary>
             public bool Valid;
         }
+        #endregion
 
         static void Main(string[] args)
         {
@@ -83,7 +84,8 @@ namespace fcfh
                 //"/p",
                 "/header",
                 @"C:\Users\Administrator\Desktop\mp3.png",
-                @"D:\Programme\VIDEO\ffmpeg\MP3\Bad Apple!!.mp3"
+                @"D:\Programme\VIDEO\ffmpeg\MP3\Bad Apple!!.mp3",
+                @"C:\Users\Administrator\Desktop\Bad Apple.png"
             };
 #endif
             var C = ParseArgs(args);
@@ -124,6 +126,7 @@ namespace fcfh
                     }
                     if (C.Mode.HasFlag(OperationMode.UseHeader))
                     {
+                        //Header mode
                         using (var InputFile = new MemoryStream(Data, false))
                         {
                             using (var ImageFile = File.OpenRead(C.HeaderFile))
@@ -135,11 +138,24 @@ namespace fcfh
                         //Trying to find data again for debug
                         using (var FS = File.OpenRead(C.Output))
                         {
-                            Console.WriteLine(ImageWriter.HeaderMode.GetFileName(FS));
+                            var Headers = ImageWriter.HeaderMode.ReadPNG(FS).Where(m => m.IsDataHeader);
+                            foreach (var H in Headers)
+                            {
+                                Console.WriteLine($"File: Name={Tools.NameOnly(H.FileName)}; Length={H.FileData.Length}");
+                            }
                         }
                     }
                     else
                     {
+                        //Pixel mode
+                        using (var InputFile = new MemoryStream(Data, false))
+                        {
+                            File.WriteAllBytes(C.Output, ImageWriter.PixelMode.CreateImageFromFile(
+                                InputFile,
+                                C.Input,
+                                C.Output.ToLower().EndsWith(".png"),
+                                C.Mode.HasFlag(OperationMode.Readable)));
+                        }
                     }
                 }
             }
