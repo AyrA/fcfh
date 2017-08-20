@@ -19,6 +19,17 @@ namespace fcfh
         public struct ImageFile
         {
             /// <summary>
+            /// Checks if this Instance is Empty or Valid
+            /// </summary>
+            public bool IsEmpty
+            {
+                get
+                {
+                    return FileName == null && Data == null;
+                }
+            }
+
+            /// <summary>
             /// File Name
             /// </summary>
             public string FileName;
@@ -332,6 +343,19 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
             public const string DEFAULT_HEADER = "fcFh";
 
             /// <summary>
+            /// Reads a byte array as PNG
+            /// </summary>
+            /// <param name="Data">Image Bytes</param>
+            /// <returns>Header list</returns>
+            public static Header[] ReadPNG(byte[] Data)
+            {
+                using (var MS = new MemoryStream(Data, false))
+                {
+                    return ReadPNG(MS);
+                }
+            }
+
+            /// <summary>
             /// Reads a stream as PNG
             /// </summary>
             /// <remarks>Stream must start with a PNG header at the current position, Stream is left open</remarks>
@@ -578,17 +602,23 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                             Data = TempMS.ToArray();
                         }
                     }
-                    //Data is in order now, get actual payload length
-                    var FileName = Encoding.UTF8.GetString(Data, 10, Tools.ntoh(BitConverter.ToInt32(Data, 6)));
-                    var Offset = Tools.ntoh(BitConverter.ToInt32(Data, 6)) + 6 + 4;
-                    var DataLen = Tools.ntoh(BitConverter.ToInt32(Data, Offset));
-                    ImageFile IF = new ImageFile()
+                    if ((new string(Data.Take(6).Select(m => (char)m).ToArray())) != MAGIC)
                     {
-                        Data = Data.Skip(Offset + 4).Take(DataLen).ToArray(),
-                        FileName = FileName
-                    };
+                        //Data is in order now, get actual payload length
+                        var FileName = Encoding.UTF8.GetString(Data, 10, Tools.ntoh(BitConverter.ToInt32(Data, 6)));
+                        var Offset = Tools.ntoh(BitConverter.ToInt32(Data, 6)) + 6 + 4;
+                        var DataLen = Tools.ntoh(BitConverter.ToInt32(Data, Offset));
+                        ImageFile IF = new ImageFile()
+                        {
+                            Data = Data.Skip(Offset + 4).Take(DataLen).ToArray(),
+                            FileName = FileName
+                        };
+                        B.UnlockBits(Locker);
+                        return IF;
+                    }
+                    //Even after reordering, there is no encoded pixel data
                     B.UnlockBits(Locker);
-                    return IF;
+                    return default(ImageFile);
                 }
             }
 

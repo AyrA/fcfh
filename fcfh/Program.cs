@@ -141,7 +141,7 @@ namespace fcfh
                             var Headers = ImageWriter.HeaderMode.ReadPNG(FS).Where(m => m.IsDataHeader);
                             foreach (var H in Headers)
                             {
-                                Console.WriteLine($"File: Name={Tools.NameOnly(H.FileName)}; Length={H.FileData.Length}");
+                                Console.Error.WriteLine($"File: Name={Tools.NameOnly(H.FileName)}; Length={H.FileData.Length}");
                             }
                         }
                     }
@@ -155,6 +155,67 @@ namespace fcfh
                                 C.Input,
                                 C.Output.ToLower().EndsWith(".png"),
                                 C.Mode.HasFlag(OperationMode.Readable)));
+                        }
+                    }
+                }
+                else if (C.Mode.HasFlag(OperationMode.Decode))
+                {
+                    var Source = File.ReadAllBytes(C.Input);
+                    if (ImageWriter.HeaderMode.IsPNG(C.Input))
+                    {
+                        //PNG mode can be header or pixel data. Prefer header
+                        var Headers = ImageWriter.HeaderMode.ReadPNG(Source);
+                        if (Headers != null)
+                        {
+                            foreach (var H in Headers.Where(m => m.IsDataHeader))
+                            {
+                                if (C.Output == null)
+                                {
+                                    //Decode all files if name is missing
+                                    File.WriteAllBytes(Tools.NameOnly(H.FileName), H.FileData);
+                                }
+                                else
+                                {
+                                    //Decode only one file
+                                    File.WriteAllBytes(C.Output, H.FileData);
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            using (var MS = new MemoryStream(Source, false))
+                            {
+                                var IF = ImageWriter.PixelMode.CreateFileFromImage(MS);
+                                if (IF.IsEmpty)
+                                {
+                                    Console.Error.WriteLine("Can't find encoded file in Pixels or Header");
+                                    return;
+                                }
+                                if (!string.IsNullOrEmpty(C.Password))
+                                {
+                                    IF.Data = DecryptData(C.Password, IF.Data);
+                                }
+                                File.WriteAllBytes(string.IsNullOrEmpty(C.Output) ? IF.FileName : C.Output, IF.Data);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        //Bitmap decode is pixel mode only
+                        using (var MS = new MemoryStream(Source, false))
+                        {
+                            var IF = ImageWriter.PixelMode.CreateFileFromImage(MS);
+                            if (IF.IsEmpty)
+                            {
+                                Console.Error.WriteLine("Can't find encoded file in Pixels");
+                                return;
+                            }
+                            if (!string.IsNullOrEmpty(C.Password))
+                            {
+                                IF.Data = DecryptData(C.Password, IF.Data);
+                            }
+                            File.WriteAllBytes(string.IsNullOrEmpty(C.Output) ? IF.FileName : C.Output, IF.Data);
                         }
                     }
                 }
