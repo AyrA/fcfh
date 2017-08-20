@@ -78,7 +78,7 @@ Not necessarily in order
 - [X] Make integers consistant (network byte order)
 - [X] File name functions for Decode
 - [X] Implement Encryption component
-- [ ] Implement Decryption component
+- [X] Implement Decryption component
 - [X] Implement Command line switches
 - [ ] GUI
 - [ ] Publish (some sort of) standard
