@@ -74,7 +74,7 @@ Not necessarily in order
 - [X] Implement Pixel mode Encode
 - [X] Implement Pixel mode Decode
 - [X] Implement Header mode Encode
-- [ ] Implement Header mode Decode
+- [X] Implement Header mode Decode
 - [ ] File name functions for Decode
 - [X] Implement Encryption component
 - [ ] Implement Decryption component
