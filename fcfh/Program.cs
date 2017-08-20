@@ -4,6 +4,9 @@ using System.Linq;
 
 namespace fcfh
 {
+    /// <summary>
+    /// Main Class
+    /// </summary>
     class Program
     {
         #region Structures
@@ -76,152 +79,202 @@ namespace fcfh
         }
         #endregion
 
+        /// <summary>
+        /// Main Entry Point
+        /// </summary>
+        /// <param name="args">Command Line Arguments</param>
         static void Main(string[] args)
         {
 #if DEBUG
             args = new string[] {
-                "/e",
-                //"/p",
-                "/header",
-                @"C:\Users\Administrator\Desktop\mp3.png",
-                @"D:\Programme\VIDEO\ffmpeg\MP3\Bad Apple!!.mp3",
-                @"C:\Users\Administrator\Desktop\Bad Apple.png"
+                "/d",
+                "/p",
+                @"..\Release\fcfh.png",
+                @"fcfh.bin"
             };
 #endif
-            var C = ParseArgs(args);
-            if (C.Valid)
+            if (args.Length == 0 || args.Contains("/?"))
             {
-                if (C.Mode.HasFlag(OperationMode.Crypt) && C.Password == null)
+                ShowHelp();
+            }
+            else
+            {
+                var C = ParseArgs(args);
+                if (C.Valid)
                 {
-                    C.Password = AskPass();
-                    Console.Error.WriteLine("Please repeat");
-                    if (C.Password != AskPass())
+                    if (C.Mode.HasFlag(OperationMode.Crypt) && C.Password == null)
                     {
-                        Console.Error.WriteLine("Passwords do not match");
-                        return;
-                    }
-                }
-                if (C.Mode.HasFlag(OperationMode.Encode))
-                {
-                    if (C.Output == null)
-                    {
-                        if (C.Mode.HasFlag(OperationMode.UseHeader) || !C.Mode.HasFlag(OperationMode.Readable))
+                        C.Password = AskPass();
+                        //Ask twice for encoding
+                        if (C.Mode.HasFlag(OperationMode.Encode))
                         {
-                            C.Output = Path.ChangeExtension(C.Input, "png");
-                        }
-                        else
-                        {
-                            C.Output = Path.ChangeExtension(C.Input, "bmp");
-                        }
-                        if (File.Exists(C.Output))
-                        {
-                            Console.Error.WriteLine("Auto-generated output name already exists. Aborting");
-                            return;
-                        }
-                    }
-                    byte[] Data = File.ReadAllBytes(C.Input);
-                    if (C.Password != null)
-                    {
-                        Data = EncryptData(C.Password, Data);
-                    }
-                    if (C.Mode.HasFlag(OperationMode.UseHeader))
-                    {
-                        //Header mode
-                        using (var InputFile = new MemoryStream(Data, false))
-                        {
-                            using (var ImageFile = File.OpenRead(C.HeaderFile))
+                            Console.Error.WriteLine("Please repeat");
+                            if (C.Password != AskPass())
                             {
-                                File.WriteAllBytes(C.Output,
-                                ImageWriter.HeaderMode.CreateImageFromFile(InputFile, Tools.NameOnly(C.Input), ImageFile));
-                            }
-                        }
-                        //Trying to find data again for debug
-                        using (var FS = File.OpenRead(C.Output))
-                        {
-                            var Headers = ImageWriter.HeaderMode.ReadPNG(FS).Where(m => m.IsDataHeader);
-                            foreach (var H in Headers)
-                            {
-                                Console.Error.WriteLine($"File: Name={Tools.NameOnly(H.FileName)}; Length={H.FileData.Length}");
+                                Console.Error.WriteLine("Passwords do not match");
+                                return;
                             }
                         }
                     }
-                    else
+                    #region Encode
+                    if (C.Mode.HasFlag(OperationMode.Encode))
                     {
-                        //Pixel mode
-                        using (var InputFile = new MemoryStream(Data, false))
+                        if (C.Output == null)
                         {
-                            File.WriteAllBytes(C.Output, ImageWriter.PixelMode.CreateImageFromFile(
-                                InputFile,
-                                C.Input,
-                                C.Output.ToLower().EndsWith(".png"),
-                                C.Mode.HasFlag(OperationMode.Readable)));
-                        }
-                    }
-                }
-                else if (C.Mode.HasFlag(OperationMode.Decode))
-                {
-                    var Source = File.ReadAllBytes(C.Input);
-                    if (ImageWriter.HeaderMode.IsPNG(C.Input))
-                    {
-                        //PNG mode can be header or pixel data. Prefer header
-                        var Headers = ImageWriter.HeaderMode.ReadPNG(Source);
-                        if (Headers != null)
-                        {
-                            foreach (var H in Headers.Where(m => m.IsDataHeader))
+                            if (C.Mode.HasFlag(OperationMode.UseHeader) || !C.Mode.HasFlag(OperationMode.Readable))
                             {
-                                if (C.Output == null)
+                                C.Output = Path.ChangeExtension(C.Input, "png");
+                            }
+                            else
+                            {
+                                C.Output = Path.ChangeExtension(C.Input, "bmp");
+                            }
+                            if (File.Exists(C.Output))
+                            {
+                                Console.Error.WriteLine("Auto-generated output name already exists. Aborting");
+                                return;
+                            }
+                        }
+                        byte[] Data = File.ReadAllBytes(C.Input);
+                        if (C.Password != null)
+                        {
+                            Data = EncryptData(C.Password, Data);
+                            if (Data == null)
+                            {
+                                Console.Error.WriteLine("Error Encrypting data");
+                                return;
+                            }
+                        }
+                        if (C.Mode.HasFlag(OperationMode.UseHeader))
+                        {
+                            //Header mode
+                            using (var InputFile = new MemoryStream(Data, false))
+                            {
+                                if (ImageWriter.HeaderMode.IsPNG(C.HeaderFile))
                                 {
-                                    //Decode all files if name is missing
-                                    File.WriteAllBytes(Tools.NameOnly(H.FileName), H.FileData);
+                                    using (var ImageFile = File.OpenRead(C.HeaderFile))
+                                    {
+                                        File.WriteAllBytes(C.Output,
+                                        ImageWriter.HeaderMode.CreateImageFromFile(InputFile, Tools.NameOnly(C.Input), ImageFile));
+                                    }
                                 }
                                 else
                                 {
-                                    //Decode only one file
-                                    File.WriteAllBytes(C.Output, H.FileData);
-                                    break;
+                                    Console.Error.WriteLine($"{Tools.NameOnly(C.HeaderFile)} is not a valid PNG image");
+                                    return;
                                 }
+                            }
+#if DEBUG
+                            //Trying to find data again for debug
+                            using (var FS = File.OpenRead(C.Output))
+                            {
+                                var Headers = ImageWriter.HeaderMode.ReadPNG(FS).Where(m => m.IsDataHeader);
+                                foreach (var H in Headers)
+                                {
+                                    Console.Error.WriteLine($"File: Name={Tools.NameOnly(H.FileName)}; Length={H.FileData.Length}");
+                                }
+                            }
+#endif
+                        }
+                        else
+                        {
+                            //Pixel mode
+                            using (var InputFile = new MemoryStream(Data, false))
+                            {
+                                File.WriteAllBytes(C.Output, ImageWriter.PixelMode.CreateImageFromFile(
+                                    InputFile,
+                                    C.Input,
+                                    C.Output.ToLower().EndsWith(".png"),
+                                    C.Mode.HasFlag(OperationMode.Readable)));
+                            }
+                        }
+                    }
+                    #endregion
+                    #region Decode
+                    else if (C.Mode.HasFlag(OperationMode.Decode))
+                    {
+                        var Source = File.ReadAllBytes(C.Input);
+                        if (ImageWriter.HeaderMode.IsPNG(C.Input))
+                        {
+                            //PNG mode can be header or pixel data. Prefer header
+                            var Headers = ImageWriter.HeaderMode.ReadPNG(Source);
+                            if (Headers != null)
+                            {
+                                Headers = Headers.Where(m => m.IsDataHeader).ToArray();
+                                if (Headers.Length > 0)
+                                {
+                                    foreach (var H in Headers)
+                                    {
+                                        var Data = H.FileData;
+                                        if (C.Password != null)
+                                        {
+                                            Data = DecryptData(C.Password, Data);
+                                            if (Data == null)
+                                            {
+                                                Console.Error.WriteLine("Error Decrypting data. Wrong Password?");
+                                                return;
+                                            }
+                                        }
+                                        if (C.Output == null)
+                                        {
+                                            //Decode all files if name is missing
+                                            File.WriteAllBytes(Tools.NameOnly(H.FileName), Data);
+                                        }
+                                        else
+                                        {
+                                            //Decode only one file
+                                            File.WriteAllBytes(C.Output, Data);
+                                            break;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    //No header matches. Maybe pixel data
+                                    DecodePixelData(Source, C);
+                                }
+                            }
+                            else
+                            {
+                                DecodePixelData(Source, C);
                             }
                         }
                         else
                         {
-                            using (var MS = new MemoryStream(Source, false))
-                            {
-                                var IF = ImageWriter.PixelMode.CreateFileFromImage(MS);
-                                if (IF.IsEmpty)
-                                {
-                                    Console.Error.WriteLine("Can't find encoded file in Pixels or Header");
-                                    return;
-                                }
-                                if (!string.IsNullOrEmpty(C.Password))
-                                {
-                                    IF.Data = DecryptData(C.Password, IF.Data);
-                                }
-                                File.WriteAllBytes(string.IsNullOrEmpty(C.Output) ? IF.FileName : C.Output, IF.Data);
-                            }
+                            //Bitmap decode is pixel mode only
+                            DecodePixelData(Source, C);
                         }
                     }
-                    else
-                    {
-                        //Bitmap decode is pixel mode only
-                        using (var MS = new MemoryStream(Source, false))
-                        {
-                            var IF = ImageWriter.PixelMode.CreateFileFromImage(MS);
-                            if (IF.IsEmpty)
-                            {
-                                Console.Error.WriteLine("Can't find encoded file in Pixels");
-                                return;
-                            }
-                            if (!string.IsNullOrEmpty(C.Password))
-                            {
-                                IF.Data = DecryptData(C.Password, IF.Data);
-                            }
-                            File.WriteAllBytes(string.IsNullOrEmpty(C.Output) ? IF.FileName : C.Output, IF.Data);
-                        }
-                    }
+                    #endregion
                 }
             }
+#if DEBUG
             Console.Error.WriteLine("#END");
             Console.ReadKey(true);
+#endif
+        }
+
+        private static void DecodePixelData(byte[] Source, CMD C)
+        {
+            using (var MS = new MemoryStream(Source, false))
+            {
+                var IF = ImageWriter.PixelMode.CreateFileFromImage(MS);
+                if (IF.IsEmpty)
+                {
+                    Console.Error.WriteLine("Can't find encoded file in Pixels");
+                    return;
+                }
+                if (!string.IsNullOrEmpty(C.Password))
+                {
+                    IF.Data = DecryptData(C.Password, IF.Data);
+                    if (IF.Data == null)
+                    {
+                        Console.Error.WriteLine("Error Decrypting data. Wrong Password?");
+                        return;
+                    }
+                }
+                File.WriteAllBytes(string.IsNullOrEmpty(C.Output) ? IF.FileName : C.Output, IF.Data);
+            }
         }
 
         /// <summary>
@@ -497,10 +550,13 @@ Note: When decoding, the arguments /readable and /header are auto-detected", Too
             {
                 using (var OUT = new MemoryStream())
                 {
-                    C.Encrypt(IN, OUT);
-                    return OUT.ToArray();
+                    if (C.Encrypt(IN, OUT) == crypt.Crypt.CryptResult.Success)
+                    {
+                        return OUT.ToArray();
+                    }
                 }
             }
+            return null;
         }
 
         /// <summary>
@@ -512,16 +568,17 @@ Note: When decoding, the arguments /readable and /header are auto-detected", Too
         private static byte[] DecryptData(string Password, byte[] Data)
         {
             var C = new crypt.Crypt();
-            //C.GenerateSalt();
-            //C.GeneratePassword(Password, 10000);
             using (var IN = new MemoryStream(Data, false))
             {
                 using (var OUT = new MemoryStream())
                 {
-                    C.Decrypt(IN, OUT, Password);
-                    return OUT.ToArray();
+                    if (C.Decrypt(IN, OUT, Password) == crypt.Crypt.CryptResult.Success)
+                    {
+                        return OUT.ToArray();
+                    }
                 }
             }
+            return null;
         }
     }
 }
