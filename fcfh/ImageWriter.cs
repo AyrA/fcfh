@@ -206,6 +206,9 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                         {
                             Console.Error.WriteLine("Checksum OK for {0}", HeaderName);
                         }
+#else
+                        //Discard Checksum for release build
+                        Tools.ntoh(BR.ReadUInt32());
 #endif
                     }
                 }
@@ -602,7 +605,7 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                             Data = TempMS.ToArray();
                         }
                     }
-                    if ((new string(Data.Take(6).Select(m => (char)m).ToArray())) != MAGIC)
+                    if ((new string(Data.Take(6).Select(m => (char)m).ToArray())) == MAGIC)
                     {
                         //Data is in order now, get actual payload length
                         var FileName = Encoding.UTF8.GetString(Data, 10, Tools.ntoh(BitConverter.ToInt32(Data, 6)));
