@@ -108,7 +108,7 @@ namespace fcfh
                 {
                     get
                     {
-                        return hton(CalcChecksum(Data));
+                        return Tools.hton(CalcChecksum(Data));
                     }
                 }
                 /// <summary>
@@ -131,7 +131,7 @@ namespace fcfh
                     {
                         if (IsDataHeader)
                         {
-                            return Encoding.UTF8.GetString(Data, 10, BitConverter.ToInt32(Data, 6));
+                            return Encoding.UTF8.GetString(Data, 10, Tools.ntoh(BitConverter.ToInt32(Data, 6)));
                         }
                         return null;
                     }
@@ -145,10 +145,10 @@ namespace fcfh
                     {
                         if (IsDataHeader)
                         {
-                            var StartOfData = 6 + 4 + 4 + BitConverter.ToInt32(Data, 6);
-                            var LengthOfData = BitConverter.ToInt32(Data, StartOfData - 4);
+                            var StartOfData = 6 + 4 + 4 + Tools.ntoh(BitConverter.ToInt32(Data, 6));
+                            var LengthOfData = Tools.ntoh(BitConverter.ToInt32(Data, StartOfData - 4));
                             return Data
-                                .Skip(6 + 4 + 4 + BitConverter.ToInt32(Data, 6))
+                                .Skip(StartOfData)
                                 .Take(LengthOfData)
                                 .ToArray();
                         }
@@ -165,7 +165,7 @@ namespace fcfh
                     using (var BR = new BinaryReader(Source, Encoding.UTF8, true))
                     {
                         //Format: <length:i><headername:s(4)><data:b(length)><crc:i>
-                        int DataLength = ntoh(BR.ReadInt32());
+                        int DataLength = Tools.ntoh(BR.ReadInt32());
                         HeaderName = Encoding.Default.GetString(BR.ReadBytes(4));
                         if (DataLength > 0)
                         {
@@ -175,7 +175,8 @@ namespace fcfh
                         {
                             Data = new byte[0];
                         }
-                        uint StoredChecksum = ntoh(BR.ReadUInt32());
+#if DEBUG
+                        uint StoredChecksum = Tools.ntoh(BR.ReadUInt32());
                         if (CalcChecksum() != StoredChecksum)
                         {
                             Console.Error.WriteLine(@"
@@ -194,6 +195,7 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                         {
                             Console.Error.WriteLine("Checksum OK for {0}", HeaderName);
                         }
+#endif
                     }
                 }
 
@@ -220,55 +222,12 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                 {
                     using (var BW = new BinaryWriter(Output, Encoding.UTF8, true))
                     {
-                        BW.Write(hton(Data.Length));
+                        BW.Write(Tools.hton(Data.Length));
                         BW.Write(Encoding.Default.GetBytes(HeaderName));
                         BW.Write(Data);
-                        BW.Write(hton(CalcChecksum()));
+                        BW.Write(Tools.hton(CalcChecksum()));
                     }
                 }
-
-                #region Utils
-
-                /// <summary>
-                /// Host to network (int)
-                /// </summary>
-                /// <param name="i">Number</param>
-                /// <returns>Number</returns>
-                public static int hton(int i)
-                {
-                    return System.Net.IPAddress.HostToNetworkOrder(i);
-                }
-
-                /// <summary>
-                /// Host to network (uint)
-                /// </summary>
-                /// <param name="i">Number</param>
-                /// <returns>Number</returns>
-                public static uint hton(uint i)
-                {
-                    return (uint)System.Net.IPAddress.HostToNetworkOrder((int)i);
-                }
-
-                /// <summary>
-                /// Network to Host (int)
-                /// </summary>
-                /// <param name="i">Number</param>
-                /// <returns>Number</returns>
-                public static int ntoh(int i)
-                {
-                    return System.Net.IPAddress.NetworkToHostOrder(i);
-                }
-
-                /// <summary>
-                /// Network to Host (uint)
-                /// </summary>
-                /// <param name="i">Number</param>
-                /// <returns>Number</returns>
-                public static uint ntoh(uint i)
-                {
-                    return (uint)System.Net.IPAddress.NetworkToHostOrder((int)i);
-                }
-                #endregion
 
                 #region CRC
 
@@ -375,7 +334,7 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
             /// <summary>
             /// Reads a stream as PNG
             /// </summary>
-            /// <remarks>Stream must start with a PNG header at the current position</remarks>
+            /// <remarks>Stream must start with a PNG header at the current position, Stream is left open</remarks>
             /// <param name="S">Stream</param>
             /// <returns>Header list</returns>
             public static Header[] ReadPNG(Stream S)
@@ -491,9 +450,9 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                     var Data = Tools.ReadAll(InputFile);
                     Headers.Insert(1, new Header(HeaderName,
                         Encoding.Default.GetBytes(MAGIC)
-                        .Concat(BitConverter.GetBytes(Encoding.Default.GetByteCount(FileName)))
+                        .Concat(BitConverter.GetBytes(Tools.hton(Encoding.Default.GetByteCount(FileName))))
                         .Concat(Encoding.Default.GetBytes(FileName))
-                        .Concat(BitConverter.GetBytes(Data.Length))
+                        .Concat(BitConverter.GetBytes(Tools.hton(Data.Length)))
                         .Concat(Data)
                         .ToArray()));
                     return WritePNG(Headers);
@@ -546,11 +505,11 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                     //Header
                     Encoding.UTF8.GetBytes(MAGIC)
                     //File name length
-                    .Concat(BitConverter.GetBytes(Encoding.UTF8.GetByteCount(FileName)))
+                    .Concat(BitConverter.GetBytes(Tools.hton(Encoding.UTF8.GetByteCount(FileName))))
                     //File name
                     .Concat(Encoding.UTF8.GetBytes(FileName))
                     //Data length
-                    .Concat(BitConverter.GetBytes(AllData.Length))
+                    .Concat(BitConverter.GetBytes(Tools.hton(AllData.Length)))
                     //Data
                     .Concat(AllData)
                     //Make array
@@ -622,8 +581,8 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                             }
                         }
                         //Data is in order now, get actual payload length
-                        var Offset = BitConverter.ToInt32(Data, 6) + 6 + 4;
-                        var DataLen = BitConverter.ToInt32(Data, Offset);
+                        var Offset = Tools.ntoh(BitConverter.ToInt32(Data, 6)) + 6 + 4;
+                        var DataLen = Tools.ntoh(BitConverter.ToInt32(Data, Offset));
                         MS.Write(Data, Offset + 4, DataLen);
                         B.UnlockBits(Locker);
                         return MS.ToArray();

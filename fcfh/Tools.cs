@@ -56,5 +56,50 @@ namespace fcfh
                 .Split(Path.AltDirectorySeparatorChar)
                 .Last();
         }
+
+        //No real reason to have those, they are just a shortcut
+        #region Integer Utils
+
+        /// <summary>
+        /// Host to network (int)
+        /// </summary>
+        /// <param name="i">Number</param>
+        /// <returns>Number</returns>
+        public static int hton(int i)
+        {
+            return System.Net.IPAddress.HostToNetworkOrder(i);
+        }
+
+        /// <summary>
+        /// Host to network (uint)
+        /// </summary>
+        /// <param name="i">Number</param>
+        /// <returns>Number</returns>
+        public static uint hton(uint i)
+        {
+            return (uint)System.Net.IPAddress.HostToNetworkOrder((int)i);
+        }
+
+        /// <summary>
+        /// Network to Host (int)
+        /// </summary>
+        /// <param name="i">Number</param>
+        /// <returns>Number</returns>
+        public static int ntoh(int i)
+        {
+            return System.Net.IPAddress.NetworkToHostOrder(i);
+        }
+
+        /// <summary>
+        /// Network to Host (uint)
+        /// </summary>
+        /// <param name="i">Number</param>
+        /// <returns>Number</returns>
+        public static uint ntoh(uint i)
+        {
+            return (uint)System.Net.IPAddress.NetworkToHostOrder((int)i);
+        }
+        #endregion
+
     }
 }
