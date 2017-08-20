@@ -472,12 +472,12 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
             private const int BYTES_PER_PIXEL = 24 / 8;
 
             /// <summary>
-            /// Saves binary data as an image
+            /// Saves binary Data as an Image
             /// </summary>
-            /// <param name="FullFileName">Source file name to process</param>
+            /// <param name="FullFileName">Source File Name to process</param>
             /// <param name="PNG">Use PNG instead of BMP</param>
-            /// <param name="AllowDirectDecode">if true, data is stored so it appears in order when viewed as BMP</param>
-            /// <returns>Image data</returns>
+            /// <param name="AllowDirectDecode">if true, Data is stored so it appears in Order when viewed as BMP</param>
+            /// <returns>Image Data</returns>
             public static byte[] CreateImageFromFile(string FullFileName, bool PNG = false, bool AllowDirectDecode = false)
             {
                 using (var FS = File.OpenRead(FullFileName))
@@ -487,13 +487,13 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
             }
 
             /// <summary>
-            /// Saves binary data as an image
+            /// Saves binary Data as an Image
             /// </summary>
-            /// <param name="Input">Source content</param>
-            /// <param name="FileName">file name to store</param>
+            /// <param name="Input">Source Content</param>
+            /// <param name="FileName">File Name to store</param>
             /// <param name="PNG">Use PNG instead of BMP</param>
-            /// <param name="AllowDirectDecode">if true, data is stored so it appears in order when viewed as BMP</param>
-            /// <returns>Image data</returns>
+            /// <param name="AllowDirectDecode">if true, Data is stored so it appears in Order when viewed as BMP</param>
+            /// <returns>Image Data</returns>
             public static byte[] CreateImageFromFile(Stream Input, string FileName, bool PNG = false, bool AllowDirectDecode = false)
             {
                 if (Input == null)
@@ -553,40 +553,42 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
             }
 
             /// <summary>
-            /// Extracts a file From an image
+            /// Extracts a File From an Image
             /// </summary>
             /// <param name="Input"></param>
             /// <returns></returns>
-            public static byte[] CreateFileFromImage(Stream Input)
+            public static ImageFile CreateFileFromImage(Stream Input)
             {
                 using (Bitmap B = (Bitmap)Image.FromStream(Input))
                 {
                     var Locker = B.LockBits(new Rectangle(0, 0, B.Width, B.Height), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
-                    using (var MS = new MemoryStream())
+                    byte[] Data = new byte[Locker.Stride * Locker.Height];
+                    Marshal.Copy(Locker.Scan0, Data, 0, Data.Length);
+                    if ((new string(Data.Take(6).Select(m => (char)m).ToArray())) != MAGIC)
                     {
-                        byte[] Data = new byte[Locker.Stride * Locker.Height];
-                        Marshal.Copy(Locker.Scan0, Data, 0, Data.Length);
-                        if ((new string(Data.Take(6).Select(m => (char)m).ToArray())) != MAGIC)
+                        //Data is not in Order because BMP.
+                        int Pos = Locker.Stride * Locker.Height - Locker.Stride;
+                        using (var TempMS = new MemoryStream())
                         {
-                            //Data is not in Order because BMP.
-                            int Pos = Locker.Stride * Locker.Height - Locker.Stride;
-                            using (var TempMS = new MemoryStream())
+                            while (Pos >= 0)
                             {
-                                while (Pos >= 0)
-                                {
-                                    TempMS.Write(Data, Pos, Locker.Stride);
-                                    Pos -= Locker.Stride;
-                                }
-                                Data = TempMS.ToArray();
+                                TempMS.Write(Data, Pos, Locker.Stride);
+                                Pos -= Locker.Stride;
                             }
+                            Data = TempMS.ToArray();
                         }
-                        //Data is in order now, get actual payload length
-                        var Offset = Tools.ntoh(BitConverter.ToInt32(Data, 6)) + 6 + 4;
-                        var DataLen = Tools.ntoh(BitConverter.ToInt32(Data, Offset));
-                        MS.Write(Data, Offset + 4, DataLen);
-                        B.UnlockBits(Locker);
-                        return MS.ToArray();
                     }
+                    //Data is in order now, get actual payload length
+                    var FileName = Encoding.UTF8.GetString(Data, 10, Tools.ntoh(BitConverter.ToInt32(Data, 6)));
+                    var Offset = Tools.ntoh(BitConverter.ToInt32(Data, 6)) + 6 + 4;
+                    var DataLen = Tools.ntoh(BitConverter.ToInt32(Data, Offset));
+                    ImageFile IF = new ImageFile()
+                    {
+                        Data = Data.Skip(Offset + 4).Take(DataLen).ToArray(),
+                        FileName = FileName
+                    };
+                    B.UnlockBits(Locker);
+                    return IF;
                 }
             }
 
