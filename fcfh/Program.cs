@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace fcfh
 {
@@ -76,6 +77,15 @@ namespace fcfh
             /// Overall command line argument validation
             /// </summary>
             public bool Valid;
+            /// <summary>
+            /// Treat Input as a string
+            /// </summary>
+            public bool InputIsString;
+            /// <summary>
+            /// Alternative File name to store in header
+            /// </summary>
+            public string AlternateFilename;
+
         }
         #endregion
 
@@ -87,10 +97,14 @@ namespace fcfh
         {
 #if DEBUG
             args = new string[] {
-                "/d",
-                "/p",
-                @"..\Release\fcfh.png",
-                @"fcfh.bin"
+                "/e",
+                "/s",
+                "TEST",
+                "/fn",
+                "SomeFileName.txt",
+                "/header",
+                @"C:\Temp\__input.png",
+                @"C:\Temp\__output.png"
             };
 #endif
             if (args.Length == 0 || args.Contains("/?"))
@@ -135,7 +149,8 @@ namespace fcfh
                                 return;
                             }
                         }
-                        byte[] Data = File.ReadAllBytes(C.Input);
+                        //Evaluate /s argument here
+                        byte[] Data = C.InputIsString ? Encoding.UTF8.GetBytes(C.Input) : File.ReadAllBytes(C.Input);
                         if (C.Password != null)
                         {
                             Data = EncryptData(C.Password, Data);
@@ -147,7 +162,7 @@ namespace fcfh
                         }
                         if (C.Mode.HasFlag(OperationMode.UseHeader))
                         {
-                            //Header mode
+                            //Header mode (/header)
                             using (var InputFile = new MemoryStream(Data, false))
                             {
                                 if (ImageWriter.HeaderMode.IsPNG(C.HeaderFile))
@@ -155,7 +170,8 @@ namespace fcfh
                                     using (var ImageFile = File.OpenRead(C.HeaderFile))
                                     {
                                         File.WriteAllBytes(C.Output,
-                                        ImageWriter.HeaderMode.CreateImageFromFile(InputFile, Tools.NameOnly(C.Input), ImageFile));
+                                        //Evaluates /fn argument
+                                        ImageWriter.HeaderMode.CreateImageFromFile(InputFile, Tools.NameOnly(string.IsNullOrEmpty(C.AlternateFilename) ? C.Input : C.AlternateFilename), ImageFile));
                                     }
                                 }
                                 else
@@ -382,7 +398,15 @@ namespace fcfh
                         {
                             if (!C.Mode.HasFlag(OperationMode.Decode))
                             {
-                                C.Mode |= OperationMode.Decode;
+                                if (!C.InputIsString)
+                                {
+                                    C.Mode |= OperationMode.Decode;
+                                }
+                                else
+                                {
+                                    Console.Error.WriteLine("/s can't be used in combination with /d");
+                                    C.Valid = false;
+                                }
                             }
                             else
                             {
@@ -424,6 +448,44 @@ namespace fcfh
                         else
                         {
                             Console.Error.WriteLine("/p or /pass specified already");
+                            C.Valid = false;
+                        }
+                        break;
+                    case "/fn":
+                        if (C.AlternateFilename == null)
+                        {
+                            if (i < Args.Length - 1)
+                            {
+                                C.AlternateFilename = Args[++i];
+                            }
+                            else
+                            {
+                                Console.Error.WriteLine("Missing file name for /fn");
+                                C.Valid = false;
+                            }
+                        }
+                        else
+                        {
+                            Console.Error.WriteLine("/fn specified multiple times");
+                            C.Valid = false;
+                        }
+                        break;
+                    case "/s":
+                        if (!C.InputIsString)
+                        {
+                            if (!C.Mode.HasFlag(OperationMode.Decode))
+                            {
+                                C.InputIsString = true;
+                            }
+                            else
+                            {
+                                Console.Error.WriteLine("/s can't be used in combination with /d");
+                                C.Valid = false;
+                            }
+                        }
+                        else
+                        {
+                            Console.Error.WriteLine("/s specified multiple times");
                             C.Valid = false;
                         }
                         break;
@@ -473,7 +535,7 @@ namespace fcfh
                         if (C.Input == null)
                         {
                             C.Input = Args[i];
-                            if (!File.Exists(C.Input))
+                            if (!C.InputIsString && !File.Exists(C.Input))
                             {
                                 Console.Error.WriteLine("Input file not found");
                                 C.Valid = false;
@@ -492,6 +554,10 @@ namespace fcfh
                 }
                 ++i;
             }
+            if (C.InputIsString && C.AlternateFilename == null)
+            {
+                C.AlternateFilename = "info.txt";
+            }
             if (C.Input == null)
             {
                 Console.Error.WriteLine("No input file specified");
@@ -505,7 +571,7 @@ namespace fcfh
         /// </summary>
         private static void ShowHelp()
         {
-            Console.Error.WriteLine(@"{0} /{{e|d}} <infile> [outfile] [/readable] [/header source] [/p|/pass password]
+            Console.Error.WriteLine(@"{0} /{{e|d}} [/s] <infile> [outfile] [/readable] [/header source] [/p|/pass password] [/fn name]
 
 Encodes and decodes information to/from images.
 This tool is not using steganography and literally just stores the data in an
@@ -513,6 +579,8 @@ image container, but ensures that said container is valid.
 
 /e          - Encode a file into an image
 /d          - Decode a file from an image
+/s          - Treat input argument as string rather than file.
+              Only valid when encoding.
 infile      - Source file
 outfile     - Destination file
               If not specified it assumes png for header encoded data,
@@ -531,6 +599,9 @@ outfile     - Destination file
               This uses proper AES, recovery of content is impossible
               if the password is lost.
 /p            Same as /pass but prompts for a password at runtime.
+/fn         - Use the given file name for the header instead of the
+              supplied name. If /s is specified and /fn is not,
+              it will default to text.txt
 
 Note: When decoding, the arguments /readable and /header are auto-detected", Tools.ProcessName);
         }
