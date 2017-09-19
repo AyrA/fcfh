@@ -601,7 +601,8 @@ outfile     - Destination file
 /p            Same as /pass but prompts for a password at runtime.
 /fn         - Use the given file name for the header instead of the
               supplied name. If /s is specified and /fn is not,
-              it will default to text.txt
+              it will default to text.txt. This argument is for
+              encoding only. Decoding uses the 'outfile' argument
 
 Note: When decoding, the arguments /readable and /header are auto-detected", Tools.ProcessName);
         }
