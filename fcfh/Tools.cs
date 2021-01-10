@@ -4,11 +4,14 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 
 namespace fcfh
 {
     public static class Tools
     {
+        public const string BROWSE_FILTER_ALL = "All files|*.*";
+
         [DllImport("kernel32.dll")]
         public static extern bool FreeConsole();
         [DllImport("kernel32.dll")]
@@ -53,6 +56,56 @@ namespace fcfh
                 Marshal.FreeHGlobal(Ptr);
             }
             return count > 1;
+        }
+
+        public static string BrowseFile(string Title, string Filter = BROWSE_FILTER_ALL, string Preselected = null, bool IsSave = false)
+        {
+            FileDialog FD;
+            if (IsSave)
+            {
+                FD = new SaveFileDialog();
+                ((SaveFileDialog)FD).OverwritePrompt = true;
+            }
+            else
+            {
+                FD = new OpenFileDialog();
+            }
+            using (FD)
+            {
+                if (string.IsNullOrEmpty(Title))
+                {
+                    FD.Title = IsSave ? "Save As..." : "Open...";
+                }
+                else
+                {
+                    FD.Title = Title;
+                }
+                if (string.IsNullOrEmpty(Filter))
+                {
+                    FD.Filter = BROWSE_FILTER_ALL;
+                }
+                else
+                {
+                    FD.Filter = Filter;
+                }
+                if (!string.IsNullOrEmpty(Preselected))
+                {
+                    if (Directory.Exists(Preselected))
+                    {
+                        FD.InitialDirectory = Preselected;
+                    }
+                    else
+                    {
+                        FD.InitialDirectory = Path.GetDirectoryName(Preselected);
+                        FD.FileName = Path.GetFileName(Preselected);
+                    }
+                }
+                if (FD.ShowDialog() == DialogResult.OK)
+                {
+                    return FD.FileName;
+                }
+            }
+            return null;
         }
 
         /// <summary>
