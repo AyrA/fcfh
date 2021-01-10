@@ -53,15 +53,6 @@ namespace fcfh
                 Marshal.FreeHGlobal(Ptr);
             }
             return count > 1;
-            /*
-            //We can only attach to the console if we have none yet
-            if (AttachConsole(ATTACH_PARENT_PROCESS))
-            {
-                FreeConsole();
-                return false;
-            }
-            return true;
-            //*/
         }
 
         /// <summary>
