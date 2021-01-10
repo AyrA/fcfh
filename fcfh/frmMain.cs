@@ -12,9 +12,29 @@ namespace fcfh
 {
     public partial class frmMain : Form
     {
-        public frmMain(string[] arguments)
+        private struct EncodeType
+        {
+            public string DisplayString;
+            public OperationMode Mode;
+
+            public override string ToString()
+            {
+                return DisplayString;
+            }
+
+            public static readonly EncodeType[] Types = new EncodeType[]
+            {
+                new EncodeType(){ DisplayString="Encode into header",Mode=OperationMode.UseHeader },
+                new EncodeType(){ DisplayString="Encode into pixeldata",Mode=OperationMode.UsePixel }
+            };
+        }
+
+        public frmMain()
         {
             InitializeComponent();
+
+            cbEncodeType.Items.AddRange(EncodeType.Types.Cast<object>().ToArray());
+            cbEncodeType.SelectedIndex = 0;
         }
     }
 }
