@@ -119,7 +119,7 @@ namespace fcfh
                 {
                     get
                     {
-                        return Tools.hton(CalcChecksum(Data));
+                        return Tools.IntToNetwork(CalcChecksum(Data));
                     }
                 }
                 /// <summary>
@@ -142,7 +142,7 @@ namespace fcfh
                     {
                         if (IsDataHeader)
                         {
-                            return Encoding.UTF8.GetString(Data, 10, Tools.ntoh(BitConverter.ToInt32(Data, 6)));
+                            return Encoding.UTF8.GetString(Data, 10, Tools.IntToHost(BitConverter.ToInt32(Data, 6)));
                         }
                         return null;
                     }
@@ -156,8 +156,8 @@ namespace fcfh
                     {
                         if (IsDataHeader)
                         {
-                            var StartOfData = 6 + 4 + 4 + Tools.ntoh(BitConverter.ToInt32(Data, 6));
-                            var LengthOfData = Tools.ntoh(BitConverter.ToInt32(Data, StartOfData - 4));
+                            var StartOfData = 6 + 4 + 4 + Tools.IntToHost(BitConverter.ToInt32(Data, 6));
+                            var LengthOfData = Tools.IntToHost(BitConverter.ToInt32(Data, StartOfData - 4));
                             return Data
                                 .Skip(StartOfData)
                                 .Take(LengthOfData)
@@ -176,7 +176,7 @@ namespace fcfh
                     using (var BR = new BinaryReader(Source, Encoding.UTF8, true))
                     {
                         //Format: <length:i><headername:s(4)><data:b(length)><crc:i>
-                        int DataLength = Tools.ntoh(BR.ReadInt32());
+                        int DataLength = Tools.IntToHost(BR.ReadInt32());
                         HeaderName = Encoding.Default.GetString(BR.ReadBytes(4));
                         if (DataLength > 0)
                         {
@@ -187,7 +187,7 @@ namespace fcfh
                             Data = new byte[0];
                         }
 #if DEBUG
-                        uint StoredChecksum = Tools.ntoh(BR.ReadUInt32());
+                        uint StoredChecksum = Tools.IntToHost(BR.ReadUInt32());
                         if (CalcChecksum() != StoredChecksum)
                         {
                             Console.Error.WriteLine(@"
@@ -236,10 +236,10 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                 {
                     using (var BW = new BinaryWriter(Output, Encoding.UTF8, true))
                     {
-                        BW.Write(Tools.hton(Data.Length));
+                        BW.Write(Tools.IntToNetwork(Data.Length));
                         BW.Write(Encoding.Default.GetBytes(HeaderName));
                         BW.Write(Data);
-                        BW.Write(Tools.hton(CalcChecksum()));
+                        BW.Write(Tools.IntToNetwork(CalcChecksum()));
                     }
                 }
 
@@ -477,9 +477,9 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                     var Data = Tools.ReadAll(InputFile);
                     Headers.Insert(1, new Header(HeaderName,
                         Encoding.Default.GetBytes(MAGIC)
-                        .Concat(BitConverter.GetBytes(Tools.hton(Encoding.Default.GetByteCount(FileName))))
+                        .Concat(BitConverter.GetBytes(Tools.IntToNetwork(Encoding.Default.GetByteCount(FileName))))
                         .Concat(Encoding.Default.GetBytes(FileName))
-                        .Concat(BitConverter.GetBytes(Tools.hton(Data.Length)))
+                        .Concat(BitConverter.GetBytes(Tools.IntToNetwork(Data.Length)))
                         .Concat(Data)
                         .ToArray()));
                     return WritePNG(Headers);
@@ -532,11 +532,11 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                     //Header
                     Encoding.UTF8.GetBytes(MAGIC)
                     //File name length
-                    .Concat(BitConverter.GetBytes(Tools.hton(Encoding.UTF8.GetByteCount(FileName))))
+                    .Concat(BitConverter.GetBytes(Tools.IntToNetwork(Encoding.UTF8.GetByteCount(FileName))))
                     //File name
                     .Concat(Encoding.UTF8.GetBytes(FileName))
                     //Data length
-                    .Concat(BitConverter.GetBytes(Tools.hton(AllData.Length)))
+                    .Concat(BitConverter.GetBytes(Tools.IntToNetwork(AllData.Length)))
                     //Data
                     .Concat(AllData)
                     //Make array
@@ -608,9 +608,9 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                     if ((new string(Data.Take(6).Select(m => (char)m).ToArray())) == MAGIC)
                     {
                         //Data is in order now, get actual payload length
-                        var FileName = Encoding.UTF8.GetString(Data, 10, Tools.ntoh(BitConverter.ToInt32(Data, 6)));
-                        var Offset = Tools.ntoh(BitConverter.ToInt32(Data, 6)) + 6 + 4;
-                        var DataLen = Tools.ntoh(BitConverter.ToInt32(Data, Offset));
+                        var FileName = Encoding.UTF8.GetString(Data, 10, Tools.IntToHost(BitConverter.ToInt32(Data, 6)));
+                        var Offset = Tools.IntToHost(BitConverter.ToInt32(Data, 6)) + 6 + 4;
+                        var DataLen = Tools.IntToHost(BitConverter.ToInt32(Data, Offset));
                         ImageFile IF = new ImageFile()
                         {
                             Data = Data.Skip(Offset + 4).Take(DataLen).ToArray(),

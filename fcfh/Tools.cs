@@ -1,11 +1,16 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace fcfh
 {
     public static class Tools
     {
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GetConsoleWindow();
+
         private static string _ProcessName;
 
         /// <summary>
@@ -26,6 +31,14 @@ namespace fcfh
             }
         }
 
+        public static bool HasConsole
+        {
+            get
+            {
+                return GetConsoleWindow() != IntPtr.Zero;
+            }
+        }
+
         /// <summary>
         /// Reads all (remaining) content of a a stream
         /// </summary>
@@ -41,22 +54,6 @@ namespace fcfh
             }
         }
 
-        /// <summary>
-        /// Returns the last component of a Path string
-        /// </summary>
-        /// <remarks>File/Directory does not needs to exist</remarks>
-        /// <param name="input">File or directory path</param>
-        /// <returns>Name component</returns>
-        public static string NameOnly(string input)
-        {
-            return input
-                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                .Split(Path.DirectorySeparatorChar)
-                .Last()
-                .Split(Path.AltDirectorySeparatorChar)
-                .Last();
-        }
-
         //No real reason to have those, they are just a shortcut
         #region Integer Utils
 
@@ -65,7 +62,7 @@ namespace fcfh
         /// </summary>
         /// <param name="i">Number</param>
         /// <returns>Number</returns>
-        public static int hton(int i)
+        public static int IntToNetwork(int i)
         {
             return System.Net.IPAddress.HostToNetworkOrder(i);
         }
@@ -75,7 +72,7 @@ namespace fcfh
         /// </summary>
         /// <param name="i">Number</param>
         /// <returns>Number</returns>
-        public static uint hton(uint i)
+        public static uint IntToNetwork(uint i)
         {
             return (uint)System.Net.IPAddress.HostToNetworkOrder((int)i);
         }
@@ -85,7 +82,7 @@ namespace fcfh
         /// </summary>
         /// <param name="i">Number</param>
         /// <returns>Number</returns>
-        public static int ntoh(int i)
+        public static int IntToHost(int i)
         {
             return System.Net.IPAddress.NetworkToHostOrder(i);
         }
@@ -95,7 +92,7 @@ namespace fcfh
         /// </summary>
         /// <param name="i">Number</param>
         /// <returns>Number</returns>
-        public static uint ntoh(uint i)
+        public static uint IntToHost(uint i)
         {
             return (uint)System.Net.IPAddress.NetworkToHostOrder((int)i);
         }

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Windows.Forms;
 
 namespace fcfh
 {
@@ -93,20 +94,16 @@ namespace fcfh
         /// Main Entry Point
         /// </summary>
         /// <param name="args">Command Line Arguments</param>
+        [STAThread]
         static void Main(string[] args)
         {
-#if DEBUG
-            args = new string[] {
-                "/e",
-                "/s",
-                "TEST",
-                "/fn",
-                "SomeFileName.txt",
-                "/header",
-                @"C:\Temp\__input.png",
-                @"C:\Temp\__output.png"
-            };
-#endif
+            if (!Tools.HasConsole)
+            {
+                Application.SetCompatibleTextRenderingDefault(false);
+                Application.EnableVisualStyles();
+                Application.Run(new frmMain(args));
+                return;
+            }
             if (args.Length == 0 || args.Contains("/?"))
             {
                 ShowHelp();
@@ -171,12 +168,12 @@ namespace fcfh
                                     {
                                         File.WriteAllBytes(C.Output,
                                         //Evaluates /fn argument
-                                        ImageWriter.HeaderMode.CreateImageFromFile(InputFile, Tools.NameOnly(string.IsNullOrEmpty(C.AlternateFilename) ? C.Input : C.AlternateFilename), ImageFile));
+                                        ImageWriter.HeaderMode.CreateImageFromFile(InputFile, Path.GetFileName(string.IsNullOrEmpty(C.AlternateFilename) ? C.Input : C.AlternateFilename), ImageFile));
                                     }
                                 }
                                 else
                                 {
-                                    Console.Error.WriteLine($"{Tools.NameOnly(C.HeaderFile)} is not a valid PNG image");
+                                    Console.Error.WriteLine($"{Path.GetFileName(C.HeaderFile)} is not a valid PNG image");
                                     return;
                                 }
                             }
@@ -187,7 +184,7 @@ namespace fcfh
                                 var Headers = ImageWriter.HeaderMode.ReadPNG(FS).Where(m => m.IsDataHeader);
                                 foreach (var H in Headers)
                                 {
-                                    Console.Error.WriteLine($"File: Name={Tools.NameOnly(H.FileName)}; Length={H.FileData.Length}");
+                                    Console.Error.WriteLine($"File: Name={Path.GetFileName(H.FileName)}; Length={H.FileData.Length}");
                                 }
                             }
 #endif
@@ -234,7 +231,7 @@ namespace fcfh
                                         if (C.Output == null)
                                         {
                                             //Decode all files if name is missing
-                                            File.WriteAllBytes(Tools.NameOnly(H.FileName), Data);
+                                            File.WriteAllBytes(Path.GetFileName(H.FileName), Data);
                                         }
                                         else
                                         {
