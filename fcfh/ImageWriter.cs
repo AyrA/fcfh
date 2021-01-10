@@ -455,7 +455,7 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                 {
                     using (var IMG = File.OpenRead(ImageFile))
                     {
-                        return CreateImageFromFile(FS, Tools.NameOnly(FullFileName), IMG, HeaderName);
+                        return CreateImageFromFile(FS, Path.GetFileName(FullFileName), IMG, HeaderName);
                     }
                 }
             }
@@ -509,7 +509,7 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
             {
                 using (var FS = File.OpenRead(FullFileName))
                 {
-                    return CreateImageFromFile(FS, Tools.NameOnly(FullFileName), PNG, AllowDirectDecode);
+                    return CreateImageFromFile(FS, Path.GetFileName(FullFileName), PNG, AllowDirectDecode);
                 }
             }
 
