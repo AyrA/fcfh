@@ -152,7 +152,7 @@ namespace fcfh
                     byte[] Data = C.InputIsString ? Encoding.UTF8.GetBytes(C.Input) : File.ReadAllBytes(C.Input);
                     if (C.Password != null)
                     {
-                        Data = EncryptData(C.Password, Data);
+                        Data = Tools.EncryptData(C.Password, Data);
                         if (Data == null)
                         {
                             Console.Error.WriteLine("Error Encrypting data");
@@ -223,7 +223,7 @@ namespace fcfh
                                     var Data = H.FileData;
                                     if (C.Password != null)
                                     {
-                                        Data = DecryptData(C.Password, Data);
+                                        Data = Tools.DecryptData(C.Password, Data);
                                         if (Data == null)
                                         {
                                             Console.Error.WriteLine("Error Decrypting data. Wrong Password?");
@@ -287,7 +287,7 @@ namespace fcfh
                 }
                 if (!string.IsNullOrEmpty(C.Password))
                 {
-                    IF.Data = DecryptData(C.Password, IF.Data);
+                    IF.Data = Tools.DecryptData(C.Password, IF.Data);
                     if (IF.Data == null)
                     {
                         Console.Error.WriteLine("Error Decrypting data. Wrong Password?");
@@ -610,52 +610,6 @@ outfile     - Destination file
               encoding only. Decoding uses the 'outfile' argument
 
 Note: When decoding, the arguments /readable and /header are auto-detected", Tools.ProcessName);
-        }
-
-        /// <summary>
-        /// Encrypts Data with a password
-        /// </summary>
-        /// <param name="Password">Password</param>
-        /// <param name="Data">Data</param>
-        /// <returns>Encrypted Data</returns>
-        private static byte[] EncryptData(string Password, byte[] Data)
-        {
-            var C = new crypt.Crypt();
-            C.GenerateSalt();
-            C.GeneratePassword(Password);
-            using (var IN = new MemoryStream(Data, false))
-            {
-                using (var OUT = new MemoryStream())
-                {
-                    if (C.Encrypt(IN, OUT) == crypt.Crypt.CryptResult.Success)
-                    {
-                        return OUT.ToArray();
-                    }
-                }
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Decrypts data encrypted with <see cref="EncryptData"/>
-        /// </summary>
-        /// <param name="Password">Password</param>
-        /// <param name="Data">Encrypted data</param>
-        /// <returns>Decrypted data</returns>
-        private static byte[] DecryptData(string Password, byte[] Data)
-        {
-            var C = new crypt.Crypt();
-            using (var IN = new MemoryStream(Data, false))
-            {
-                using (var OUT = new MemoryStream())
-                {
-                    if (C.Decrypt(IN, OUT, Password) == crypt.Crypt.CryptResult.Success)
-                    {
-                        return OUT.ToArray();
-                    }
-                }
-            }
-            return null;
         }
     }
 }

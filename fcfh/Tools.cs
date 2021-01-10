@@ -123,6 +123,53 @@ namespace fcfh
             }
         }
 
+
+        /// <summary>
+        /// Encrypts Data with a password
+        /// </summary>
+        /// <param name="Password">Password</param>
+        /// <param name="Data">Data</param>
+        /// <returns>Encrypted Data</returns>
+        public static byte[] EncryptData(string Password, byte[] Data)
+        {
+            var C = new crypt.Crypt();
+            C.GenerateSalt();
+            C.GeneratePassword(Password);
+            using (var IN = new MemoryStream(Data, false))
+            {
+                using (var OUT = new MemoryStream())
+                {
+                    if (C.Encrypt(IN, OUT) == crypt.Crypt.CryptResult.Success)
+                    {
+                        return OUT.ToArray();
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Decrypts data encrypted with <see cref="EncryptData"/>
+        /// </summary>
+        /// <param name="Password">Password</param>
+        /// <param name="Data">Encrypted data</param>
+        /// <returns>Decrypted data</returns>
+        public static byte[] DecryptData(string Password, byte[] Data)
+        {
+            var C = new crypt.Crypt();
+            using (var IN = new MemoryStream(Data, false))
+            {
+                using (var OUT = new MemoryStream())
+                {
+                    if (C.Decrypt(IN, OUT, Password) == crypt.Crypt.CryptResult.Success)
+                    {
+                        return OUT.ToArray();
+                    }
+                }
+            }
+            return null;
+        }
+
         //No real reason to have those, they are just a shortcut
         #region Integer Utils
 
