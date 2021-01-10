@@ -208,7 +208,7 @@ string.Join("-", BitConverter.GetBytes(StoredChecksum).Select(m => m.ToString("X
                         }
 #else
                         //Discard Checksum for release build
-                        Tools.ntoh(BR.ReadUInt32());
+                        Tools.IntToHost(BR.ReadUInt32());
 #endif
                     }
                 }
