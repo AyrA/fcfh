@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -9,7 +10,11 @@ namespace fcfh
     public static class Tools
     {
         [DllImport("kernel32.dll")]
-        private static extern IntPtr GetConsoleWindow();
+        public static extern bool FreeConsole();
+        [DllImport("kernel32.dll")]
+        private static extern int GetConsoleProcessList(IntPtr mem, int count);
+
+        private const int ATTACH_PARENT_PROCESS = -1;
 
         private static string _ProcessName;
 
@@ -31,12 +36,32 @@ namespace fcfh
             }
         }
 
-        public static bool HasConsole
+        public static bool HasConsole()
         {
-            get
+            IntPtr Ptr = Marshal.AllocHGlobal(sizeof(int));
+            int count = 0;
+            try
             {
-                return GetConsoleWindow() != IntPtr.Zero;
+                count = GetConsoleProcessList(Ptr, 1);
+                if (count <= 0)
+                {
+                    throw new Win32Exception();
+                }
             }
+            finally
+            {
+                Marshal.FreeHGlobal(Ptr);
+            }
+            return count > 1;
+            /*
+            //We can only attach to the console if we have none yet
+            if (AttachConsole(ATTACH_PARENT_PROCESS))
+            {
+                FreeConsole();
+                return false;
+            }
+            return true;
+            //*/
         }
 
         /// <summary>
