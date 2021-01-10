@@ -17,11 +17,28 @@ namespace fcfh
         {
             PW = OriginalPassword;
             InitializeComponent();
+            if (string.IsNullOrEmpty(PW))
+            {
+                Text = "Password required";
+                lblPrompt.Text = "A password is required";
+            }
         }
 
         private void btnOK_Click(object sender, EventArgs e)
         {
-            if (PW == tbConfirmPassword.Text)
+            if(string.IsNullOrEmpty(PW))
+            {
+                if(!string.IsNullOrEmpty(tbConfirmPassword.Text))
+                {
+                    DialogResult = DialogResult.OK;
+                    Close();
+                }
+                else
+                {
+                    MessageBox.Show("Please enter a password", "No Password", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                }
+            }
+            else if (PW == tbConfirmPassword.Text)
             {
                 DialogResult = DialogResult.OK;
                 Close();

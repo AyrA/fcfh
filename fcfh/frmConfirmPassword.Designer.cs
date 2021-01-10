@@ -31,7 +31,7 @@ namespace fcfh
         {
             this.btnOK = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
-            this.label1 = new System.Windows.Forms.Label();
+            this.lblPrompt = new System.Windows.Forms.Label();
             this.tbConfirmPassword = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
@@ -57,14 +57,14 @@ namespace fcfh
             this.btnCancel.Text = "&Cancel";
             this.btnCancel.UseVisualStyleBackColor = true;
             // 
-            // label1
+            // lblPrompt
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 9);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(147, 13);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "Please confirm your password";
+            this.lblPrompt.AutoSize = true;
+            this.lblPrompt.Location = new System.Drawing.Point(12, 9);
+            this.lblPrompt.Name = "lblPrompt";
+            this.lblPrompt.Size = new System.Drawing.Size(147, 13);
+            this.lblPrompt.TabIndex = 0;
+            this.lblPrompt.Text = "Please confirm your password";
             // 
             // tbConfirmPassword
             // 
@@ -84,7 +84,7 @@ namespace fcfh
             this.CancelButton = this.btnCancel;
             this.ClientSize = new System.Drawing.Size(410, 103);
             this.Controls.Add(this.tbConfirmPassword);
-            this.Controls.Add(this.label1);
+            this.Controls.Add(this.lblPrompt);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOK);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
@@ -104,7 +104,7 @@ namespace fcfh
 
         private System.Windows.Forms.Button btnOK;
         private System.Windows.Forms.Button btnCancel;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label lblPrompt;
         private System.Windows.Forms.TextBox tbConfirmPassword;
     }
 }
