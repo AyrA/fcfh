@@ -40,7 +40,7 @@ namespace fcfh
             this.label4 = new System.Windows.Forms.Label();
             this.tbEncodeOutput = new System.Windows.Forms.TextBox();
             this.btnEncodeBrowseOutput = new System.Windows.Forms.Button();
-            this.tbEncrypt = new System.Windows.Forms.TextBox();
+            this.tbEncodeEncrypt = new System.Windows.Forms.TextBox();
             this.cbEncrypt = new System.Windows.Forms.CheckBox();
             this.label5 = new System.Windows.Forms.Label();
             this.tbEncodeSource = new System.Windows.Forms.TextBox();
@@ -55,7 +55,7 @@ namespace fcfh
             | System.Windows.Forms.AnchorStyles.Right)));
             this.gbEncode.Controls.Add(this.btnEncodeStart);
             this.gbEncode.Controls.Add(this.cbEncrypt);
-            this.gbEncode.Controls.Add(this.tbEncrypt);
+            this.gbEncode.Controls.Add(this.tbEncodeEncrypt);
             this.gbEncode.Controls.Add(this.btnEncodeBrowseSource);
             this.gbEncode.Controls.Add(this.btnEncodeBrowseOutput);
             this.gbEncode.Controls.Add(this.tbEncodeSource);
@@ -98,6 +98,8 @@ namespace fcfh
             // 
             this.tbEncodeInput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.tbEncodeInput.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
+            this.tbEncodeInput.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.FileSystem;
             this.tbEncodeInput.Location = new System.Drawing.Point(55, 57);
             this.tbEncodeInput.Name = "tbEncodeInput";
             this.tbEncodeInput.Size = new System.Drawing.Size(431, 20);
@@ -158,6 +160,8 @@ namespace fcfh
             // 
             this.tbEncodeOutput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.tbEncodeOutput.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
+            this.tbEncodeOutput.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.FileSystem;
             this.tbEncodeOutput.Location = new System.Drawing.Point(55, 228);
             this.tbEncodeOutput.Name = "tbEncodeOutput";
             this.tbEncodeOutput.Size = new System.Drawing.Size(431, 20);
@@ -174,16 +178,16 @@ namespace fcfh
             this.btnEncodeBrowseOutput.UseVisualStyleBackColor = true;
             this.btnEncodeBrowseOutput.Click += new System.EventHandler(this.btnEncodeBrowseOutput_Click);
             // 
-            // tbEncrypt
+            // tbEncodeEncrypt
             // 
-            this.tbEncrypt.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.tbEncodeEncrypt.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.tbEncrypt.Enabled = false;
-            this.tbEncrypt.Location = new System.Drawing.Point(123, 192);
-            this.tbEncrypt.Name = "tbEncrypt";
-            this.tbEncrypt.Size = new System.Drawing.Size(363, 20);
-            this.tbEncrypt.TabIndex = 11;
-            this.tbEncrypt.UseSystemPasswordChar = true;
+            this.tbEncodeEncrypt.Enabled = false;
+            this.tbEncodeEncrypt.Location = new System.Drawing.Point(123, 192);
+            this.tbEncodeEncrypt.Name = "tbEncodeEncrypt";
+            this.tbEncodeEncrypt.Size = new System.Drawing.Size(363, 20);
+            this.tbEncodeEncrypt.TabIndex = 11;
+            this.tbEncodeEncrypt.UseSystemPasswordChar = true;
             // 
             // cbEncrypt
             // 
@@ -209,6 +213,8 @@ namespace fcfh
             // 
             this.tbEncodeSource.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.tbEncodeSource.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
+            this.tbEncodeSource.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.FileSystem;
             this.tbEncodeSource.Location = new System.Drawing.Point(55, 156);
             this.tbEncodeSource.Name = "tbEncodeSource";
             this.tbEncodeSource.Size = new System.Drawing.Size(431, 20);
@@ -234,6 +240,7 @@ namespace fcfh
             this.btnEncodeStart.TabIndex = 15;
             this.btnEncodeStart.Text = "Encode";
             this.btnEncodeStart.UseVisualStyleBackColor = true;
+            this.btnEncodeStart.Click += new System.EventHandler(this.btnEncodeStart_Click);
             // 
             // frmMain
             // 
@@ -260,7 +267,7 @@ namespace fcfh
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.CheckBox cbReadable;
         private System.Windows.Forms.CheckBox cbEncrypt;
-        private System.Windows.Forms.TextBox tbEncrypt;
+        private System.Windows.Forms.TextBox tbEncodeEncrypt;
         private System.Windows.Forms.Button btnEncodeBrowseOutput;
         private System.Windows.Forms.TextBox tbEncodeOutput;
         private System.Windows.Forms.Label label4;
