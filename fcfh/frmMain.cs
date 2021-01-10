@@ -213,14 +213,11 @@ namespace fcfh
                     byte[] Data;
                     if (encrypt)
                     {
-                        using (var IS = File.OpenRead(tbEncodeSource.Text))
+                        var Encrypted = Tools.EncryptData(tbEncodeEncrypt.Text, File.ReadAllBytes(tbEncodeInput.Text));
+                        using (var MS = new MemoryStream(Encrypted, false))
                         {
-                            var Encrypted = Tools.EncryptData(tbEncodeEncrypt.Text, File.ReadAllBytes(tbEncodeInput.Text));
-                            using (var MS = new MemoryStream(Encrypted, false))
-                            {
-                                Data = ImageWriter.PixelMode.CreateImageFromFile(
-                                    MS, Path.GetFileName(tbEncodeInput.Text), isPngOutput);
-                            }
+                            Data = ImageWriter.PixelMode.CreateImageFromFile(
+                                MS, Path.GetFileName(tbEncodeInput.Text), isPngOutput);
                         }
                     }
                     else
