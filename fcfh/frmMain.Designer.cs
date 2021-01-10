@@ -227,6 +227,7 @@ namespace fcfh
             // 
             // btnEncodeStart
             // 
+            this.btnEncodeStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnEncodeStart.Location = new System.Drawing.Point(492, 265);
             this.btnEncodeStart.Name = "btnEncodeStart";
             this.btnEncodeStart.Size = new System.Drawing.Size(75, 23);
