@@ -24,8 +24,16 @@ namespace fcfh
 
             public static readonly EncodeType[] Types = new EncodeType[]
             {
-                new EncodeType(){ DisplayString="Encode into header",Mode=OperationMode.UseHeader },
-                new EncodeType(){ DisplayString="Encode into pixeldata",Mode=OperationMode.UsePixel }
+                new EncodeType()
+                {
+                    DisplayString = "Encode into header",
+                    Mode = OperationMode.UseHeader | OperationMode.Encode
+                },
+                new EncodeType()
+                {
+                    DisplayString = "Encode into pixeldata",
+                    Mode = OperationMode.UsePixel | OperationMode.Encode
+                }
             };
         }
 
@@ -35,6 +43,56 @@ namespace fcfh
 
             cbEncodeType.Items.AddRange(EncodeType.Types.Cast<object>().ToArray());
             cbEncodeType.SelectedIndex = 0;
+        }
+
+        private void cbEncodeType_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            tbEncodeSource.Enabled =
+                btnEncodeBrowseSource.Enabled = cbEncodeType.SelectedIndex != 1;
+            cbReadable.Enabled = !tbEncodeSource.Enabled;
+        }
+
+        private void cbEncrypt_CheckedChanged(object sender, EventArgs e)
+        {
+            if (!(tbEncrypt.Enabled = cbEncrypt.Checked))
+            {
+                //It's a good idea to clear the password if the user disables encryption
+                tbEncrypt.Text = string.Empty;
+            }
+        }
+
+        private void btnEncodeBrowseInput_Click(object sender, EventArgs e)
+        {
+            var f = Tools.BrowseFile("Select file to encode", Preselected: tbEncodeInput.Text);
+            if (!string.IsNullOrEmpty(f))
+            {
+                tbEncodeInput.Text = f;
+            }
+        }
+
+        private void btnEncodeBrowseOutput_Click(object sender, EventArgs e)
+        {
+            var f = Tools.BrowseFile(
+                "Save image as",
+                "PNG files|*.png|Bitmap files|*.bmp",
+                tbEncodeOutput.Text,
+                true);
+            if (!string.IsNullOrEmpty(f))
+            {
+                tbEncodeOutput.Text = f;
+            }
+        }
+
+        private void btnEncodeBrowseSource_Click(object sender, EventArgs e)
+        {
+            var f = Tools.BrowseFile(
+                "Source image",
+                "PNG files|*.png",
+                tbEncodeSource.Text);
+            if (!string.IsNullOrEmpty(f))
+            {
+                tbEncodeSource.Text = f;
+            }
         }
     }
 }
