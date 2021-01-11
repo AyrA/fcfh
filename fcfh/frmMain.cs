@@ -41,6 +41,8 @@ namespace fcfh
         public frmMain()
         {
             InitializeComponent();
+            //Allow vertical scaling
+            MaximumSize = new Size(int.MaxValue, MinimumSize.Height);
 
             cbEncodeType.Items.AddRange(EncodeType.Types.Cast<object>().ToArray());
             cbEncodeType.SelectedIndex = 0;
@@ -55,10 +57,10 @@ namespace fcfh
 
         private void cbEncrypt_CheckedChanged(object sender, EventArgs e)
         {
-            if (!(tbEncodeEncrypt.Enabled = cbEncrypt.Checked))
+            if (!(tbEncodePassword.Enabled = cbEncrypt.Checked))
             {
                 //It's a good idea to clear the password if the user disables encryption
-                tbEncodeEncrypt.Text = string.Empty;
+                tbEncodePassword.Text = string.Empty;
             }
         }
 
@@ -92,11 +94,49 @@ namespace fcfh
                 tbEncodeSource.Text);
             if (!string.IsNullOrEmpty(f))
             {
-                tbEncodeSource.Text = f;
+                if (ImageWriter.HeaderMode.IsPNG(f))
+                {
+                    tbEncodeSource.Text = f;
+                }
+                else
+                {
+                    try
+                    {
+                        using (var FS = File.OpenRead(f))
+                        {
+                            //Minimum size is PNG header(8) + IEND chunk (12)
+                            if (FS.Length > 8 + 12)
+                            {
+                                var data = new byte[4];
+                                FS.Read(data, 0, data.Length);
+                                var header = Encoding.Default.GetString(data);
+                                //Header looks like PNG
+                                if (header == "ëPNG")
+                                {
+                                    Warn("The selected file is probably corrupt");
+                                }
+                                else
+                                {
+                                    //TODO for the future: Detect different image types and convert to PNG
+                                    Warn(@"This file is either corrupt or a different format but with .png file extension.
+A PNG header starts with 'ëPNG' but this file starts with " + header);
+                                }
+                            }
+                            else
+                            {
+                                Warn("File is too short to be a PNG image");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Warn($"Unable to check the selected file. Reason: {ex.Message}", ex.GetType().Name);
+                    }
+                }
             }
         }
 
-        private void Info(string Message, string Title)
+        private void Info(string Message, string Title = null)
         {
             MessageBox.Show(
                 Message,
@@ -104,7 +144,7 @@ namespace fcfh
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private void Warn(string Message, string Title)
+        private void Warn(string Message, string Title = null)
         {
             MessageBox.Show(
                 Message,
@@ -112,7 +152,7 @@ namespace fcfh
                 MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
         }
 
-        private void Err(string Message, string Title)
+        private void Err(string Message, string Title = null)
         {
             MessageBox.Show(
                 Message,
@@ -136,17 +176,17 @@ namespace fcfh
 
             if (encrypt)
             {
-                if (string.IsNullOrEmpty(tbEncodeEncrypt.Text))
+                if (string.IsNullOrEmpty(tbEncodePassword.Text))
                 {
                     Warn("Please enter a password or disable encryption", "Missing password");
-                    tbEncodeEncrypt.Focus();
+                    tbEncodePassword.Focus();
                     return;
                 }
-                using (var pw = new frmConfirmPassword(tbEncodeEncrypt.Text))
+                using (var pw = new frmConfirmPassword(tbEncodePassword.Text))
                 {
                     if (pw.ShowDialog() != DialogResult.OK)
                     {
-                        tbEncodeEncrypt.Focus();
+                        tbEncodePassword.Focus();
                         return;
                     }
                 }
@@ -180,7 +220,7 @@ namespace fcfh
                     {
                         using (var IS = File.OpenRead(tbEncodeSource.Text))
                         {
-                            var Encrypted = Tools.EncryptData(tbEncodeEncrypt.Text, File.ReadAllBytes(tbEncodeInput.Text));
+                            var Encrypted = Tools.EncryptData(tbEncodePassword.Text, File.ReadAllBytes(tbEncodeInput.Text));
                             using (var MS = new MemoryStream(Encrypted, false))
                             {
                                 Data = ImageWriter.HeaderMode.CreateImageFromFile(
@@ -204,7 +244,6 @@ namespace fcfh
                     Err("Unable to encode data as image.\r\nReason: " + ex.Message, ex.GetType().Name);
                     return;
                 }
-
             }
             else
             {
@@ -213,7 +252,7 @@ namespace fcfh
                     byte[] Data;
                     if (encrypt)
                     {
-                        var Encrypted = Tools.EncryptData(tbEncodeEncrypt.Text, File.ReadAllBytes(tbEncodeInput.Text));
+                        var Encrypted = Tools.EncryptData(tbEncodePassword.Text, File.ReadAllBytes(tbEncodeInput.Text));
                         using (var MS = new MemoryStream(Encrypted, false))
                         {
                             Data = ImageWriter.PixelMode.CreateImageFromFile(
@@ -235,7 +274,184 @@ namespace fcfh
                     Err("Unable to encode data as image.\r\nReason: " + ex.Message, ex.GetType().Name);
                     return;
                 }
-                Info("Your file has been encoded into an image", "File encoded");
+            }
+            Info("Your file has been encoded into an image", "File encoded");
+        }
+
+        private void btnDecodeBrowse_Click(object sender, EventArgs e)
+        {
+            var f = Tools.BrowseFile(
+                "Source image",
+                "Supported images|*.png;*.bmp|PNG files|*.png|Bitmap files|*.bmp",
+                tbDecodeInput.Text);
+            if (!string.IsNullOrEmpty(f))
+            {
+                tbDecodeInput.Text = f;
+            }
+        }
+
+        private void btnDecodeStart_Click(object sender, EventArgs e)
+        {
+            var isPNG = ImageWriter.HeaderMode.IsPNG(tbDecodeInput.Text);
+            var decodePixels = cbDecodePixels.Checked;
+            var decodeHeaders = isPNG && cbDecodeHeaders.Checked;
+            //If at least one file was skipped
+            var skipped = false;
+            //If at least one file was decoded
+            var decoded = false;
+            if (!decodeHeaders && !decodePixels)
+            {
+                Warn("Please select at least one decoding method");
+                return;
+            }
+            if (decodeHeaders)
+            {
+                if (!isPNG)
+                {
+                    Info("Header decoding is only supported for PNG images. This mode will be skipped.");
+                }
+                else
+                {
+                    PNGHeader[] Headers = null;
+                    try
+                    {
+                        Headers = ImageWriter.HeaderMode
+                            .ReadPNG(tbDecodeInput.Text)
+                            .Where(m => m.IsDataHeader)
+                            .ToArray();
+                    }
+                    catch (Exception ex)
+                    {
+                        Err("Failed to read the image as PNG. Reason: " + ex.Message, ex.GetType().Name);
+                        return;
+                    }
+                    foreach (var Header in Headers)
+                    {
+                        var Encrypted = false;
+                        var Data = Header.FileData;
+                        using (var MS = new MemoryStream(Data, false))
+                        {
+                            Encrypted = crypt.Crypt.IsEncrypted(MS);
+                        }
+                        if (Encrypted)
+                        {
+                            using (var PW = new frmConfirmPassword(null))
+                            {
+                                if (PW.ShowDialog() == DialogResult.OK)
+                                {
+                                    Data = Tools.DecryptData(PW.PW, Data);
+                                    if (Data == null)
+                                    {
+                                        Warn("Unable to decrypt " + Header.FileName + "\r\nWrong password?");
+                                    }
+                                }
+                                else
+                                {
+                                    Data = null;
+                                }
+                            }
+                        }
+                        if (Data != null)
+                        {
+                            var FN = Path.Combine(Path.GetDirectoryName(tbDecodeInput.Text), Header.FileName);
+                            FN = Tools.BrowseFile("Save As...", Preselected: FN, IsSave: true);
+                            if (!string.IsNullOrEmpty(FN))
+                            {
+                                File.WriteAllBytes(FN, Data);
+                                decoded = true;
+                            }
+                            else
+                            {
+                                skipped = true;
+                            }
+                        }
+                        else
+                        {
+                            skipped = true;
+                        }
+                    }
+                }
+            }
+            if (decodePixels)
+            {
+                FileStream FS;
+                try
+                {
+                    FS = File.OpenRead(tbDecodeInput.Text);
+                }
+                catch (Exception ex)
+                {
+                    Err("Unable to open source file for pixel data decoding. Reason: " + ex.Message, ex.GetType().Name);
+                    return;
+                }
+                using (FS)
+                {
+                    var IF = ImageWriter.PixelMode.CreateFileFromImage(FS);
+                    if (!IF.IsEmpty)
+                    {
+                        var Encrypted = false;
+                        var Data = IF.Data;
+                        using (var MS = new MemoryStream(Data, false))
+                        {
+                            Encrypted = crypt.Crypt.IsEncrypted(MS);
+                        }
+                        if (Encrypted)
+                        {
+                            using (var PW = new frmConfirmPassword(null))
+                            {
+                                if (PW.ShowDialog() == DialogResult.OK)
+                                {
+                                    Data = Tools.DecryptData(PW.PW, Data);
+                                    if (Data == null)
+                                    {
+                                        Warn("Unable to decrypt " + IF.FileName + "\r\nWrong password?");
+                                    }
+                                }
+                                else
+                                {
+                                    Data = null;
+                                }
+                            }
+                        }
+                        if (Data != null)
+                        {
+                            var FN = Path.Combine(Path.GetDirectoryName(tbDecodeInput.Text), Header.FileName);
+                            FN = Tools.BrowseFile("Save As...", Preselected: FN, IsSave: true);
+                            if (!string.IsNullOrEmpty(FN))
+                            {
+                                File.WriteAllBytes(FN, Data);
+                                decoded = true;
+                            }
+                            else
+                            {
+                                skipped = true;
+                            }
+                        }
+                        else
+                        {
+                            skipped = true;
+                        }
+                    }
+                    else
+                    {
+                        Info("Pixel data does not contain an encoded file");
+                    }
+                }
+            }
+            if(decoded)
+            {
+                if(skipped)
+                {
+                    Warn("Image decoding complete, but at least one file was skipped");
+                }
+                else
+                {
+                    Info("Image decoding complete");
+                }
+            }
+            else
+            {
+                Warn("No files were decoded from the image");
             }
         }
     }
