@@ -22,29 +22,29 @@ It detects the appropriate mode automatically.
 	/e          - Encode a file into an image
 	/d          - Decode a file from an image
 	/s          - Treat input argument as string rather than file.
-				  Only valid when encoding.
+	              Only valid when encoding.
 	infile      - Source file
 	outfile     - Destination file
-				  If not specified it assumes png for header encoded data,
-				  Assumes PNG for pixel data without '/readable'
-				  Assumes BMP for pixel data with '/readable'.
+	              If not specified it assumes png for header encoded data,
+	              Assumes PNG for pixel data without '/readable'
+	              Assumes BMP for pixel data with '/readable'.
 	/readable   - Encodes content in binary readable form.
-				  Only has an effect if encoding to 24 bit bitmap (.bmp),
-				  because bitmap files are stored bottom up.
+	              Only has an effect if encoding to 24 bit bitmap (.bmp),
+	              because bitmap files are stored bottom up.
 	/header     - Store content in a header instead of pixel data.
-				  Be aware that some applications strip unknown headers.
-				  The source argument is the file that is used as template.
-				  This only works on PNG files.
-				  Note: Some editors will strip unknown headers if you edit
-				  the image file.
+	              Be aware that some applications strip unknown headers.
+	              The source argument is the file that is used as template.
+	              This only works on PNG files.
+	              Note: Some editors will strip unknown headers if you edit
+	              the image file.
 	/pass       - Encrypt/Decrypt using the given password.
-				  This uses proper AES, recovery of content is impossible
-				  if the password is lost.
+	              This uses proper AES, recovery of content is impossible
+	              if the password is lost.
 	/p            Same as /pass but prompts for a password at runtime.
 	/fn         - Use the given file name for the header instead of the
-				  supplied name. If /s is specified and /fn is not,
-				  it will default to text.txt. This argument is for
-				  encoding only. Decoding uses the 'outfile' argument
+	              supplied name. If /s is specified and /fn is not,
+	              it will default to text.txt. This argument is for
+	              encoding only. Decoding uses the 'outfile' argument
 
 	Note: When decoding, the arguments /readable and /header are auto-detected
 
