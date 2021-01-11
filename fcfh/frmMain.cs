@@ -415,7 +415,7 @@ A PNG header starts with 'ëPNG' but this file starts with " + header);
                         }
                         if (Data != null)
                         {
-                            var FN = Path.Combine(Path.GetDirectoryName(tbDecodeInput.Text), Header.FileName);
+                            var FN = Path.Combine(Path.GetDirectoryName(tbDecodeInput.Text), IF.FileName);
                             FN = Tools.BrowseFile("Save As...", Preselected: FN, IsSave: true);
                             if (!string.IsNullOrEmpty(FN))
                             {
