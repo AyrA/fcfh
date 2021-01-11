@@ -112,7 +112,7 @@ namespace crypt
             FileHashInvalid = 16 | Error,
             /// <summary>
             /// File state is invalid. Reasons:
-            /// - Attemting to decrypt unencrypted file
+            /// - Attempting to decrypt unencrypted file
             /// - Encrypt already encrypted file.
             /// This error can be resolved by just copying/moving the file.
             /// </summary>
