@@ -557,6 +557,21 @@ namespace crypt
         }
 
         /// <summary>
+        /// Checks if a stream has a crypt header
+        /// </summary>
+        /// <param name="Input">Stream (positioned at expected header start)</param>
+        /// <returns>true, if it has valid header</returns>
+        /// <remarks>
+        /// This will not attempt to verify the header or content itself.
+        /// This will not rewind the stream.
+        /// The stream position is undefined after this function
+        /// </remarks>
+        public static bool IsEncrypted(Stream Input)
+        {
+            return GetHeader(Input).Valid;
+        }
+
+        /// <summary>
         /// Generates cryptographically safe random bytes
         /// </summary>
         /// <param name="Count">Number of bytes to generate</param>
