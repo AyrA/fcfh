@@ -12,7 +12,7 @@ namespace fcfh
 {
     public partial class frmConfirmPassword : Form
     {
-        private string PW;
+        public string PW { get; private set; }
         public frmConfirmPassword(string OriginalPassword)
         {
             PW = OriginalPassword;
@@ -30,6 +30,7 @@ namespace fcfh
             {
                 if(!string.IsNullOrEmpty(tbConfirmPassword.Text))
                 {
+                    PW = tbConfirmPassword.Text;
                     DialogResult = DialogResult.OK;
                     Close();
                 }
